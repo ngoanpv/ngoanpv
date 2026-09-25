@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/500-italic.css">
 <link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/600.css">
 <link rel="stylesheet" href="node_modules/@fontsource/jetbrains-mono/400.css">
-<style>html,body{margin:0;background:#0d0c0a}canvas{display:block}</style>
+<style>html,body{margin:0;background:#f4efe4}canvas{display:block}</style>
 </head><body><canvas id="c"></canvas>
 <script>
 /* "Không" — a short film about an empty circle that builds things.
@@ -14,8 +14,9 @@ const cv = document.getElementById('c');
 cv.width = W * S; cv.height = H * S; cv.style.width = W + 'px'; cv.style.height = H + 'px';
 const ctx = cv.getContext('2d');
 const SERIF = '"Cormorant Garamond", serif', SANS = 'Inter, sans-serif', MONO = '"JetBrains Mono", monospace';
-const INK = '233,227,214', SAND = '205,177,126', MOSS = '159,174,136';
+const INK = '43,40,35', SAND = '226,160,70', MOSS = '95,114,73';
 const ink = a => `rgba(${INK},${a})`, sand = a => `rgba(${SAND},${a})`, moss = a => `rgba(${MOSS},${a})`;
+const white = a => `rgba(255,255,255,${a})`, sun = a => `rgba(224,113,79,${a})`, lamp = a => `rgba(240,150,60,${a})`, torii = a => `rgba(196,82,58,${a})`, petal = a => `rgba(234,164,176,${a})`;
 
 // ---------- math
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -90,7 +91,7 @@ function brushEnso(cx, cy, r, width, prog, gapDir, a, seed = 0, sx = 1, sy = 1, 
     for (let b = 0; b < B; b++) {
       if (hash(b * 13.7 + Math.floor(u * 120) + seed) < 0.1 + 0.5 * Math.pow(u, 3)) continue;
       const off = (b / (B - 1) - 0.5) * w;
-      ctx.fillStyle = ink(a * (0.32 + 0.22 * hash(b + s + seed)));
+      ctx.fillStyle = ink(a * (0.42 + 0.25 * hash(b + s + seed)));
       ctx.beginPath(); ctx.arc(x + nx * off, y + ny * off, w / B + 0.9, 0, 7); ctx.fill();
     }
   }
@@ -221,10 +222,10 @@ function knowledge(t) {
   // stones (always there once revealed)
   STONES.forEach(([x, y], i) => {
     alpha(va, () => {
-      ctx.strokeStyle = ink(0.12); ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(150,120,80,0.35)'; ctx.lineWidth = 1;
       for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.ellipse(x, y, 16 + k * 10, (16 + k * 10) * 0.42, 0, 0, 7); ctx.stroke(); }
-      ctx.fillStyle = '#2b2923'; ctx.beginPath(); ctx.ellipse(x, y, 16, 9, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = ink(0.12); ctx.beginPath(); ctx.ellipse(x - 4, y - 3, 7, 3, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#7f786c'; ctx.beginPath(); ctx.ellipse(x, y, 16, 9, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = white(0.35); ctx.beginPath(); ctx.ellipse(x - 4, y - 3, 7, 3, 0, 0, 7); ctx.fill();
     });
   });
   // knowledge graph threads between stones
@@ -277,8 +278,8 @@ function boulder(t) {
       const x = BX + R * j * Math.cos(ang), yy = y + (lerp(0, 50 - 22 * 0.72, m)) + R * j * ry * Math.sin(ang);
       k ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy);
     }
-    ctx.closePath(); ctx.fillStyle = '#2d2a24'; ctx.fill(); ctx.strokeStyle = ink(0.35); ctx.lineWidth = 1.5; ctx.stroke();
-    if (m > 0.6) { ctx.fillStyle = ink(0.14 * (m - 0.6) / 0.4); ctx.beginPath(); ctx.ellipse(BX - 6, y + 32, 8, 3, 0, 0, 7); ctx.fill(); }
+    ctx.closePath(); ctx.fillStyle = '#8c8578'; ctx.fill(); ctx.strokeStyle = ink(0.35); ctx.lineWidth = 1.5; ctx.stroke();
+    if (m > 0.6) { ctx.fillStyle = white(0.4 * (m - 0.6) / 0.4); ctx.beginPath(); ctx.ellipse(BX - 6, y + 32, 8, 3, 0, 0, 7); ctx.fill(); }
     // cracks on the rough stone
     alpha(1 - m, () => { stroke([[BX - 20, y - 18], [BX - 4, y - 2], [BX + 8, y - 10], [BX + 20, y + 14]], 1.2, 0.3); });
   });
@@ -286,7 +287,7 @@ function boulder(t) {
   const d = seg(t, 26.8, 27.8);
   if (d > 0 && d < 1) for (let k = 0; k < 8; k++) {
     const dir = (k / 7 - 0.5) * 2, x = BX + dir * (46 + d * (50 + 40 * hash(k))), yy = GROUND - 6 - hash(k + 3) * 14 - Math.sin(Math.PI * d) * (8 + 14 * hash(k + 7));
-    glow(x, yy, 10 + d * 16, ink, 0.12 * (1 - d));
+    glow(x, yy, 10 + d * 16, white, 0.6 * (1 - d));
   }
   // chisel strokes and shards
   for (let j = 0; j < 5; j++) {
@@ -318,12 +319,12 @@ function orbiters(t) {
   const per = t < tb + 0.4 ? 5 : 2, t0 = t < tb + 0.4 ? 26.9 : tb + 0.4;
   const f = ((t - t0) % per) / per;
   alpha(a * 0.8, () => {
-    ctx.strokeStyle = sand(0.55); ctx.lineWidth = 1.6; ctx.beginPath();
+    ctx.strokeStyle = 'rgba(176,120,40,0.8)'; ctx.lineWidth = 1.8; ctx.beginPath();
     ctx.arc(o.x, o.y, 40 * CAM.z, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); ctx.stroke();
     ctx.font = `400 15px ${MONO}`; ctx.fillStyle = ink(0.6); ctx.textAlign = 'center';
     const before = 1 - seg(t, tb, tb + 0.6), after = seg(t, tb + 0.3, tb + 0.9);
     ctx.globalAlpha *= before || 0.0001; ctx.fillText('5.0 s', o.x, o.y - 56 * CAM.z);
-    ctx.globalAlpha = a * 0.8 * after; ctx.fillStyle = sand(0.9); ctx.fillText('≈ 2 s', o.x, o.y - 56 * CAM.z);
+    ctx.globalAlpha = a * 0.8 * after; ctx.fillStyle = 'rgba(176,120,40,1)'; ctx.fillText('≈ 2 s', o.x, o.y - 56 * CAM.z);
     ctx.textAlign = 'left';
   });
 }
@@ -335,10 +336,10 @@ function gate(t) {
   const a = seg(t, 33, 35);
   if (a <= 0) return;
   alpha(a, () => {
-    stroke([[GX - 38, GROUND + 2], [GX - 34, GROUND - 150]], 9, 0.5);
-    stroke([[GX + 38, GROUND + 2], [GX + 34, GROUND - 150]], 9, 0.5);
-    stroke([[GX - 70, GROUND - 160], [GX - 30, GROUND - 158], [GX + 30, GROUND - 158], [GX + 70, GROUND - 163]], 8, 0.55);
-    stroke([[GX - 50, GROUND - 128], [GX + 50, GROUND - 128]], 5, 0.45);
+    stroke([[GX - 38, GROUND + 2], [GX - 34, GROUND - 150]], 9, 0.9, torii);
+    stroke([[GX + 38, GROUND + 2], [GX + 34, GROUND - 150]], 9, 0.9, torii);
+    stroke([[GX - 70, GROUND - 160], [GX - 30, GROUND - 158], [GX + 30, GROUND - 158], [GX + 70, GROUND - 163]], 9, 0.95, ink);
+    stroke([[GX - 50, GROUND - 128], [GX + 50, GROUND - 128]], 6, 0.9, torii);
     // the gate lights up when something true passes
     let lit = 0;
     for (const A of GATE_AGENTS) { const q = seg(t, A.tGate, A.tGate + 0.6); if (A.ok && q > 0 && q < 1) lit = Math.max(lit, Math.sin(Math.PI * q)); }
@@ -368,14 +369,14 @@ function gateAgents(t) {
 function hill(t) {
   layer(1);
   ctx.beginPath(); HILL.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
-  ctx.fillStyle = '#1f1d19'; ctx.fill();
+  ctx.fillStyle = '#b7c8a4'; ctx.fill();
   stroke(HILL.slice(0, -1), 1.5, 0.22);
-  STEPS.forEach(([x, y]) => { ctx.fillStyle = '#2d2a24'; ctx.beginPath(); ctx.ellipse(x, y + 2, 14, 4, 0, 0, 7); ctx.fill(); });
+  STEPS.forEach(([x, y]) => { ctx.fillStyle = '#7f786c'; ctx.beginPath(); ctx.ellipse(x, y + 2, 14, 4, 0, 0, 7); ctx.fill(); });
   const k = win(t, 43.9, 44.8, 53.5, 54.4);
   alpha(k * 0.7, () => {
-    ctx.font = `400 13px ${MONO}`; ctx.fillStyle = sand(0.9); ctx.textAlign = 'center';
-    ctx.fillText('1st · national LLM benchmarks', 1812, 190);
-    ctx.fillStyle = ink(0.55); ctx.fillText('9th · Interspeech multilingual ASR', 1812, 208); ctx.textAlign = 'left';
+    ctx.font = `400 13px ${MONO}`; ctx.fillStyle = 'rgba(176,120,40,0.95)'; ctx.textAlign = 'center';
+    ctx.fillText('1st · national LLM benchmarks', 1812, 160);
+    ctx.fillStyle = ink(0.55); ctx.fillText('9th · Interspeech multilingual ASR', 1812, 178); ctx.textAlign = 'left';
   });
 }
 
@@ -388,18 +389,18 @@ function lanterns(t) {
     const k = eback(seg(t, L.on, L.on + 0.5));
     if (k <= 0) continue;
     const fl = 0.8 + 0.2 * Math.sin(t * 3 + L.f);
-    glow(L.x, L.y, 16 * k, sand, 0.22 * fl * fade);
-    ctx.fillStyle = sand(0.9 * fade); ctx.beginPath(); ctx.arc(L.x, L.y, 2.4 * k, 0, 7); ctx.fill();
+    glow(L.x, L.y, 18 * k, lamp, 0.45 * fl * fade);
+    ctx.fillStyle = lamp(0.95 * fade); ctx.beginPath(); ctx.arc(L.x, L.y, 2.6 * k, 0, 7); ctx.fill();
   }
   // a few paper boats with lanterns drift down the river
   for (let i = 0; i < 4; i++) {
     const k = seg(t, 47 + i * 0.8, 55 + i * 0.8); if (k <= 0) continue;
     const x = 900 + i * 220 + k * 520, y = RIVER0 + 22 + Math.sin(t * 2 + i) * 2;
     alpha(win(t, 47 + i * 0.8, 47.8 + i * 0.8, 53.6, 54.6), () => {
-      ctx.fillStyle = ink(0.8); ctx.beginPath();
-      ctx.moveTo(x - 20, y); ctx.lineTo(x + 20, y); ctx.lineTo(x + 12, y + 9); ctx.lineTo(x - 12, y + 9); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(x - 8, y); ctx.lineTo(x, y - 16); ctx.lineTo(x + 8, y); ctx.closePath(); ctx.fillStyle = ink(0.65); ctx.fill();
-      glow(x + 14, y - 6, 12, sand, 0.4); ctx.fillStyle = sand(0.95); ctx.beginPath(); ctx.arc(x + 14, y - 6, 2.2, 0, 7); ctx.fill();
+      ctx.fillStyle = white(0.95); ctx.strokeStyle = ink(0.6); ctx.lineWidth = 1; ctx.beginPath();
+      ctx.moveTo(x - 20, y); ctx.lineTo(x + 20, y); ctx.lineTo(x + 12, y + 9); ctx.lineTo(x - 12, y + 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - 8, y); ctx.lineTo(x, y - 16); ctx.lineTo(x + 8, y); ctx.closePath(); ctx.fillStyle = white(0.9); ctx.fill(); ctx.stroke();
+      glow(x + 14, y - 6, 12, lamp, 0.5); ctx.fillStyle = lamp(0.95); ctx.beginPath(); ctx.arc(x + 14, y - 6, 2.2, 0, 7); ctx.fill();
     });
   }
 }
@@ -407,24 +408,24 @@ function lanterns(t) {
 // ---------- world
 function world(t) {
   screen();
-  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0c0b09'); g.addColorStop(0.62, '#1a1814'); g.addColorStop(1, '#141310');
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#dbe7ee'); g.addColorStop(0.55, '#f6e6d6'); g.addColorStop(1, '#eee2cd');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   // moon
-  layer(0.08); glow(1020, 130, 150, ink, 0.07); ctx.fillStyle = ink(0.13); ctx.beginPath(); ctx.arc(1020, 130, 30, 0, 7); ctx.fill();
+  layer(0.08); glow(1020, 130, 190, sun, 0.22); ctx.fillStyle = sun(0.92); ctx.beginPath(); ctx.arc(1020, 130, 32, 0, 7); ctx.fill();
   // mountains
-  layer(0.25); ctx.beginPath(); ctx.moveTo(FAR[0][0], 1400); FAR.forEach(([x, y]) => ctx.lineTo(x, y)); ctx.lineTo(FAR[FAR.length - 1][0], 1400); ctx.fillStyle = ink(0.05); ctx.fill();
-  layer(0.45); ctx.beginPath(); ctx.moveTo(MID[0][0], 1400); MID.forEach(([x, y]) => ctx.lineTo(x, y)); ctx.lineTo(MID[MID.length - 1][0], 1400); ctx.fillStyle = ink(0.07); ctx.fill();
+  layer(0.25); ctx.beginPath(); ctx.moveTo(FAR[0][0], 1400); FAR.forEach(([x, y]) => ctx.lineTo(x, y)); ctx.lineTo(FAR[FAR.length - 1][0], 1400); ctx.fillStyle = 'rgba(150,176,196,0.55)'; ctx.fill();
+  layer(0.45); ctx.beginPath(); ctx.moveTo(MID[0][0], 1400); MID.forEach(([x, y]) => ctx.lineTo(x, y)); ctx.lineTo(MID[MID.length - 1][0], 1400); ctx.fillStyle = 'rgba(128,160,140,0.6)'; ctx.fill();
   // mist
   layer(0.6);
-  for (let i = 0; i < 7; i++) { const x = ((i * 520 + t * 7) % 3600) - 800, y = 380 + (i % 3) * 30; ctx.fillStyle = ink(0.03); ctx.beginPath(); ctx.ellipse(x, y, 420, 26, 0, 0, 7); ctx.fill(); }
+  for (let i = 0; i < 7; i++) { const x = ((i * 520 + t * 7) % 3600) - 800, y = 380 + (i % 3) * 30; ctx.fillStyle = white(0.35); ctx.beginPath(); ctx.ellipse(x, y, 420, 26, 0, 0, 7); ctx.fill(); }
   // ground
   layer(1);
-  ctx.fillStyle = '#1b1915'; ctx.fillRect(-2000, GROUND, 6000, 1400);
-  const hz = ctx.createLinearGradient(0, GROUND - 20, 0, GROUND + 30); hz.addColorStop(0, ink(0)); hz.addColorStop(0.5, ink(0.05)); hz.addColorStop(1, ink(0));
+  ctx.fillStyle = '#ecdfc8'; ctx.fillRect(-2000, GROUND, 6000, 1400);
+  const hz = ctx.createLinearGradient(0, GROUND - 20, 0, GROUND + 30); hz.addColorStop(0, white(0)); hz.addColorStop(0.5, white(0.55)); hz.addColorStop(1, white(0));
   ctx.fillStyle = hz; ctx.fillRect(-2000, GROUND - 20, 6000, 50);
   hill(t);
   // raked sand
-  ctx.strokeStyle = ink(0.055); ctx.lineWidth = 1.1;
+  ctx.strokeStyle = 'rgba(150,120,80,0.2)'; ctx.lineWidth = 1.1;
   const x0 = CAM.x - 1200 / CAM.z, x1 = CAM.x + 1200 / CAM.z;
   for (let y0 = GROUND + 12; y0 < RIVER0 - 6; y0 += 10) {
     ctx.beginPath();
@@ -432,12 +433,12 @@ function world(t) {
     ctx.stroke();
   }
   // river
-  ctx.fillStyle = '#12110e'; ctx.fillRect(-2000, RIVER0, 6000, RIVER1 - RIVER0);
+  ctx.fillStyle = '#b8d5d3'; ctx.fillRect(-2000, RIVER0, 6000, RIVER1 - RIVER0);
   stroke([[-2000, RIVER0], [4000, RIVER0]], 1, 0.12); stroke([[-2000, RIVER1], [4000, RIVER1]], 1, 0.08);
   for (let i = 0; i < 90; i++) {
     const len = 20 + hash(i) * 50, y = RIVER0 + 8 + hash(i + 5) * 34, sp = 20 + hash(i + 2) * 25;
     const x = ((hash(i + 9) * 4200 - t * sp) % 4200 + 4200) % 4200 - 800;
-    stroke([[x, y], [x + len, y]], 1, 0.1);
+    stroke([[x, y], [x + len, y]], 1.2, 0.6, white);
   }
 }
 function foreground(t) {
@@ -445,18 +446,20 @@ function foreground(t) {
   REEDS.forEach((r, i) => {
     const sway = 0.08 * Math.sin(t * 0.9 + i);
     const bx = r.x, by = 780, tx = bx + (r.lean + sway) * r.h * 1.6, ty = by - r.h * 1.8;
-    ctx.strokeStyle = 'rgba(8,7,6,0.55)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(70,90,60,0.5)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + (tx - bx) * 0.2, (by + ty) / 2, tx, ty); ctx.stroke();
   });
 }
 function fireflies(t) {
-  const a = Math.max(win(t, 44, 47, 54, 56), 0.35 * win(t, 0, 4, 8, 10));
-  if (a <= 0) return;
+  // sakura petals drifting across, all film long
   screen();
-  for (let i = 0; i < 26; i++) {
-    const x = (hash(i) * 1400 + Math.sin(t * 0.3 + i) * 40 + t * 4) % 1400 - 60, y = 200 + hash(i + 4) * 420 + Math.sin(t * 0.5 + i * 2) * 20;
-    const fl = 0.5 + 0.5 * Math.sin(t * 2 + i * 3);
-    glow(x, y, 8, sand, 0.35 * a * fl); ctx.fillStyle = sand(0.8 * a * fl); ctx.beginPath(); ctx.arc(x, y, 1.4, 0, 7); ctx.fill();
+  for (let i = 0; i < 18; i++) {
+    const sp = 18 + hash(i) * 22, ph = hash(i + 3) * 1600;
+    const x = ((ph + t * sp) % 1500) - 110, y = ((hash(i + 7) * 700 + t * (10 + hash(i + 1) * 12)) % 760) - 20 + Math.sin(t * 0.8 + i) * 12;
+    const rot = t * (0.6 + hash(i + 5)) + i;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+    ctx.fillStyle = petal(0.75); ctx.beginPath(); ctx.ellipse(0, 0, 5, 2.6, 0, 0, 7); ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -486,10 +489,10 @@ function birth(t) {
 function endingFog(t) {
   const fog = eio(seg(t, 54.2, 56.4));
   if (fog > 0) {
-    screen(); ctx.fillStyle = `rgba(20,19,16,${fog})`; ctx.fillRect(0, 0, W, H);
+    screen(); ctx.fillStyle = `rgba(244,239,228,${fog})`; ctx.fillRect(0, 0, W, H);
     // sand lines come back, quietly
     alpha(seg(t, 56, 58), () => {
-      ctx.strokeStyle = ink(0.05); ctx.lineWidth = 1.1;
+      ctx.strokeStyle = 'rgba(150,120,80,0.16)'; ctx.lineWidth = 1.1;
       for (let y0 = 14; y0 < H; y0 += 15) {
         ctx.beginPath(); let pen = false;
         for (let x = -10; x <= W + 10; x += 8) {
@@ -506,17 +509,11 @@ function endingFog(t) {
 function ending(t) {
   if (t < 57.8) return;
   screen();
-  alpha(eout(seg(t, 57.8, 59.2)), () => {
-    ctx.textAlign = 'center';
-    ctx.font = `600 58px ${SERIF}`; ctx.fillStyle = ink(0.95); ctx.fillText('Phạm Văn Ngoan', 640, 548);
-    ctx.font = `400 18px ${SANS}`; ctx.fillStyle = ink(0.55); ctx.fillText('builder  ·  github.com/ngoanpv', 640, 586);
-    ctx.textAlign = 'left';
-  });
-  alpha(eout(seg(t, 59.4, 60.6)) * 0.85, () => {
-    ctx.font = `400 16px ${MONO}`;
-    const parts = [['model.fit(', ink(0.45)], ['curiosity', sand(0.85)], [', epochs=', ink(0.45)], ['∞', moss(0.9)], [')', ink(0.45)]];
+  alpha(eout(seg(t, 58.4, 59.8)) * 0.9, () => {
+    ctx.font = `400 18px ${MONO}`;
+    const parts = [['model.fit(', ink(0.55)], ['curiosity', 'rgba(176,120,40,1)'], [', epochs=', ink(0.55)], ['∞', moss(1)], [')', ink(0.55)]];
     const full = parts.map(p => p[0]).join(''); let x = 640 - ctx.measureText(full).width / 2;
-    parts.forEach(([s, c]) => { ctx.fillStyle = c; ctx.fillText(s, x, 632); x += ctx.measureText(s).width; });
+    parts.forEach(([s, c]) => { ctx.fillStyle = c; ctx.fillText(s, x, 520); x += ctx.measureText(s).width; });
   });
 }
 
@@ -554,7 +551,7 @@ function render(t) {
   protagonist(t);
   // opening mist
   const mist = 1 - eio(seg(t, 0, 3.2));
-  if (mist > 0) { screen(); ctx.fillStyle = `rgba(20,19,16,${0.85 * mist})`; ctx.fillRect(0, 0, W, H); }
+  if (mist > 0) { screen(); ctx.fillStyle = `rgba(244,239,228,${0.9 * mist})`; ctx.fillRect(0, 0, W, H); }
   ending(t);
   caption(t, 3.8, 4.8, 6.2, 7.0, 'Empty — and so, room for anything.');
   caption(t, 9.0, 10.0, 14.0, 14.8, 'It begins by listening.');
