@@ -16,7 +16,9 @@
 
 </div>
 
-<!-- 🎬 Film "Không": open this README in GitHub's web editor and drag film/khong.mp4 here to embed it. -->
+<a href="./film/khong.mp4"><img src="./film/khong-teaser.gif" alt="Không — a short film about an empty circle that builds things" width="100%"></a>
+
+<div align="center"><sub><i>Không</i> — a 64-second film about an empty circle that builds things · <a href="./film/khong.mp4">watch</a></sub></div>
 
 <br/>
 
