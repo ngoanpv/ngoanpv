@@ -1,0 +1,60 @@
+name: Refresh profile
+
+on:
+  schedule:
+    - cron: "7 17 * * *" # daily, ~00:07 in Viet Nam
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/profile.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile
+  cancel-in-progress: true
+
+jobs:
+  cards:
+    name: Apps, stats & project cards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate cards
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_LOGIN: ${{ github.repository_owner }}
+        run: python scripts/generate_cards.py
+      - name: Commit if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/generated
+          git diff --cached --quiet || git commit -m "chore: refresh profile cards"
+          git push
+
+  snake:
+    name: Contribution snake
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Platane/snk@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/snake-light.svg?color_snake=#5f7249&color_dots=#ece5d8,#dcd0b8,#c4b38e,#a38f62,#7d6b41
+            dist/snake-dark.svg?palette=github-dark&color_snake=#b3bf98&color_dots=#1f1d1a,#3a3528,#5a5038,#85774f,#b3a36e
+      - name: Publish to the "output" branch
+        run: |
+          cd dist
+          git init -q -b output
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -qm "chore: update snake"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" output
