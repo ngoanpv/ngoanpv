@@ -321,10 +321,6 @@ function orbiters(t) {
   alpha(a * 0.8, () => {
     ctx.strokeStyle = 'rgba(176,120,40,0.8)'; ctx.lineWidth = 1.8; ctx.beginPath();
     ctx.arc(o.x, o.y, 40 * CAM.z, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); ctx.stroke();
-    ctx.font = `400 15px ${MONO}`; ctx.fillStyle = ink(0.6); ctx.textAlign = 'center';
-    const before = 1 - seg(t, tb, tb + 0.6), after = seg(t, tb + 0.3, tb + 0.9);
-    ctx.globalAlpha *= before || 0.0001; ctx.fillText('5.0 s', o.x, o.y - 56 * CAM.z);
-    ctx.globalAlpha = a * 0.8 * after; ctx.fillStyle = 'rgba(176,120,40,1)'; ctx.fillText('≈ 2 s', o.x, o.y - 56 * CAM.z);
     ctx.textAlign = 'left';
   });
 }
@@ -372,12 +368,6 @@ function hill(t) {
   ctx.fillStyle = '#b7c8a4'; ctx.fill();
   stroke(HILL.slice(0, -1), 1.5, 0.22);
   STEPS.forEach(([x, y]) => { ctx.fillStyle = '#7f786c'; ctx.beginPath(); ctx.ellipse(x, y + 2, 14, 4, 0, 0, 7); ctx.fill(); });
-  const k = win(t, 43.9, 44.8, 53.5, 54.4);
-  alpha(k * 0.7, () => {
-    ctx.font = `400 13px ${MONO}`; ctx.fillStyle = 'rgba(176,120,40,0.95)'; ctx.textAlign = 'center';
-    ctx.fillText('1st · national LLM benchmarks', 1812, 160);
-    ctx.fillStyle = ink(0.55); ctx.fillText('9th · Interspeech multilingual ASR', 1812, 178); ctx.textAlign = 'left';
-  });
 }
 
 // ---------- scene 6: reach
