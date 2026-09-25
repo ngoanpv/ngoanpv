@@ -1,7 +1,7 @@
 """Shared palette + fonts for every SVG in this profile.
 
-A quiet, ink-and-paper palette: warm charcoal at night, rice paper by day,
-with muted earth accents (sand, moss, clay, stone, dusk). No neon.
+A light ink-wash palette: rice paper, sumi ink, and the colours of a clear
+day — sky indigo, river teal, moss, saffron, sakura, a vermilion sun.
 Each asset is rendered twice (dark + light) and the README picks one with
 <picture> so it matches the viewer's GitHub theme.
 """
@@ -12,46 +12,28 @@ MONO = "'SF Mono', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono', monospa
 
 # The accent keys keep their historical names so every drawing function can
 # stay the same; the values are what makes it calm.
-THEMES = {
-    "dark": {
-        "bg": "#141311",       # warm charcoal
-        "panel": "#1a1916",
-        "border": "#2e2b25",
-        "grid": "#211f1b",
-        "text": "#e9e3d6",     # rice paper
-        "muted": "#9b9486",
-        "faint": "#3d3a32",
-        "violet": "#9aa3b5",   # dusk / stone blue
-        "cyan": "#9fae88",     # moss
-        "green": "#b3bf98",    # sage
-        "amber": "#cdb17e",    # sand gold
-        "pink": "#c49a8c",     # clay
-        "red": "#b9765d",      # persimmon
-        "ink": "#e9e3d6",
-        "term_bg": "#161512",
-        "bar_bg": "#1d1b18",
-        "glow": 0.22,
-    },
-    "light": {
-        "bg": "#f6f2ea",       # paper
-        "panel": "#f1ece2",
-        "border": "#dfd6c6",
-        "grid": "#ece5d8",
-        "text": "#2b2823",     # sumi ink
-        "muted": "#6f685c",
-        "faint": "#cdc3b1",
-        "violet": "#5f6b80",
-        "cyan": "#5f7249",
-        "green": "#6c7e56",
-        "amber": "#94753d",
-        "pink": "#9a6456",
-        "red": "#9a4f36",
-        "ink": "#2b2823",
-        "term_bg": "#f8f5ef",
-        "bar_bg": "#efe9de",
-        "glow": 0.14,
-    },
+BRIGHT = {
+    "bg": "#f8f2e7",       # rice paper
+    "panel": "#fcf8f1",
+    "border": "#e7dcc7",
+    "grid": "#efe5d3",
+    "text": "#2b2823",     # sumi ink
+    "muted": "#6f685c",
+    "faint": "#dccfb8",
+    "violet": "#4f7cac",   # sky indigo
+    "cyan": "#2f8f8a",     # river teal
+    "green": "#6a9a4b",    # moss
+    "amber": "#dc9a2c",    # saffron
+    "pink": "#e27d8f",     # sakura
+    "red": "#e0714f",      # vermilion sun
+    "ink": "#2b2823",
+    "term_bg": "#fffaf2",
+    "bar_bg": "#f3e9d8",
+    "glow": 0.3,
 }
+# Bright in both GitHub themes: the profile reads as one light ink-wash painting.
+THEMES = {"dark": dict(BRIGHT), "light": dict(BRIGHT)}
+
 
 # Calm sequence used wherever several categories need colours (languages, tiles).
 def calm_sequence(c):

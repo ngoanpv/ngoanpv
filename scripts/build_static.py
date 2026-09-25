@@ -63,31 +63,35 @@ def banner(mode: str) -> str:
     s.append(
         f"""<defs>
 <linearGradient id="tg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="520" y2="0" spreadMethod="reflect">
-  <stop offset="0" stop-color="{c['text']}"/><stop offset="0.55" stop-color="{c['text']}"/><stop offset="1" stop-color="{c['amber']}"/>
+  <stop offset="0" stop-color="{c['text']}"/><stop offset="0.55" stop-color="{c['text']}"/><stop offset="1" stop-color="{c['red']}"/>
   <animateTransform attributeName="gradientTransform" type="translate" values="0 0;520 0;0 0" dur="18s" repeatCount="indefinite"/>
 </linearGradient>
-<radialGradient id="moon"><stop offset="0" stop-color="{c['ink']}" stop-opacity="{c['glow']*0.5}"/><stop offset="1" stop-color="{c['ink']}" stop-opacity="0"/></radialGradient>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9e8f0"/><stop offset="0.62" stop-color="#f7e8d8"/><stop offset="1" stop-color="#f1e4cc"/></linearGradient>
+<radialGradient id="sunglow"><stop offset="0" stop-color="{c['red']}" stop-opacity="0.35"/><stop offset="1" stop-color="{c['red']}" stop-opacity="0"/></radialGradient>
 <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 <clipPath id="card"><rect width="{W}" height="{H}" rx="18"/></clipPath>
 </defs>
 <g clip-path="url(#card)">
-<rect width="{W}" height="{H}" fill="{c['bg']}"/>"""
+<rect width="{W}" height="{H}" fill="url(#sky)"/>"""
     )
-    # raked sand lines, barely there
-    d = []
-    for y0 in range(12, H, 13):
-        pts = " L".join(f"{x} {y0 + 1.2 * math.sin(x / 60 + y0 * 0.2):.1f}" for x in range(0, W + 20, 20))
-        d.append("M" + pts)
-    s.append(f'<path d="{" ".join(d)}" fill="none" stroke="{c["grid"]}" stroke-width="1.1"/>')
+    # sun, distant hills, a strip of mist
     s.append(
-        f'<circle cx="955" cy="150" r="230" fill="url(#moon)"><animate attributeName="r" values="215;240;215" dur="12s" repeatCount="indefinite" '
-        f'calcMode="spline" keyTimes="0;0.5;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"/></circle></g>'
-        f'<rect x="0.5" y="0.5" width="{W-1}" height="{H-1}" rx="18" fill="none" stroke="{c["border"]}"/>'
+        f'<circle cx="1110" cy="64" r="120" fill="url(#sunglow)"><animate attributeName="r" values="110;130;110" dur="12s" repeatCount="indefinite"/></circle>'
+        f'<circle cx="1110" cy="64" r="24" fill="{c["red"]}" opacity="0.92"/>'
+    )
+    far = " L".join(f"{x} {232 - 38 * math.sin(x / 210 + 1.1) - 16 * math.sin(x / 83):.1f}" for x in range(0, W + 20, 20))
+    mid = " L".join(f"{x} {262 - 26 * math.sin(x / 160 + 2.4) - 10 * math.sin(x / 57):.1f}" for x in range(0, W + 20, 20))
+    s.append(
+        f'<path d="M0 {H} L{far} L{W} {H} Z" fill="#9db6c9" opacity="0.55"/>'
+        f'<path d="M0 {H} L{mid} L{W} {H} Z" fill="#8fb094" opacity="0.6"/>'
+        f'<rect y="{H-26}" width="{W}" height="26" fill="#f1e4cc" opacity="0.9"/>'
+        f'<ellipse cx="420" cy="250" rx="360" ry="10" fill="#fff" opacity="0.45"><animate attributeName="cx" values="380;460;380" dur="20s" repeatCount="indefinite"/></ellipse>'
+        f'</g><rect x="0.5" y="0.5" width="{W-1}" height="{H-1}" rx="18" fill="none" stroke="{c["border"]}"/>'
     )
     # left text block
     s.append(
         f'<text x="66" y="86" font-family="{MONO}" font-size="14" fill="{c["muted"]}">'
-        f'<tspan fill="{c["cyan"]}">➜</tspan> {esc(CONFIG["handle"])} '
+        f'<tspan fill="{c["green"]}">➜</tspan> {esc(CONFIG["handle"])} '
         f'<tspan fill="{c["faint"]}">git:(</tspan><tspan fill="{c["pink"]}">main</tspan><tspan fill="{c["faint"]}">)</tspan></text>'
     )
     s.append(
@@ -102,8 +106,8 @@ def banner(mode: str) -> str:
         w = int(len(p) * 7.4 + 36)
         s.append(
             f'<g transform="translate({x},220)">'
-            f'<rect x="0.5" y="0.5" width="{w}" height="30" rx="15" fill="none" stroke="{c["faint"]}"/>'
-            f'<circle cx="17" cy="15.5" r="3.5" fill="{c["amber"]}">'
+            f'<rect x="0.5" y="0.5" width="{w}" height="30" rx="15" fill="{[c["cyan"], c["pink"]][i % 2]}" fill-opacity="0.12" stroke="{[c["cyan"], c["pink"]][i % 2]}" stroke-opacity="0.5"/>'
+            f'<circle cx="17" cy="15.5" r="3.5" fill="{[c["cyan"], c["pink"]][i % 2]}">'
             f'<animate attributeName="opacity" values="1;0.35;1" dur="5s" begin="{i*1.5}s" repeatCount="indefinite"/></circle>'
             f'<text x="29" y="20.5" font-family="{SANS}" font-size="13" fill="{c["text"]}" opacity="0.85">{esc(p)}</text></g>'
         )
@@ -128,7 +132,7 @@ def banner(mode: str) -> str:
     for i in range(10):
         pts = [rnd.choice(layer) for layer in nodes]
         d = "M" + " L".join(f"{x} {y}" for x, y in pts)
-        col = c["amber"] if i % 3 else c["cyan"]
+        col = [c["cyan"], c["pink"], c["amber"], c["violet"]][i % 4]
         begin = round(i * 0.7, 2)
         pk.append(
             f'<path d="{d}" fill="none" stroke="{col}" stroke-width="1.2" stroke-dasharray="420" stroke-dashoffset="420" opacity="0">'
@@ -144,8 +148,8 @@ def banner(mode: str) -> str:
         for k, (x, y) in enumerate(layer):
             begin = round(li * 0.8 + k * 0.15, 2)
             s.append(
-                f'<circle cx="{x}" cy="{y}" r="7.5" fill="{c["bg"]}" stroke="{c["muted"]}" stroke-width="1.3"/>'
-                f'<circle cx="{x}" cy="{y}" r="3" fill="{c["ink"]}">'
+                f'<circle cx="{x}" cy="{y}" r="7.5" fill="#fffaf2" stroke="{[c["violet"], c["cyan"], c["green"], c["pink"]][li]}" stroke-width="1.6"/>'
+                f'<circle cx="{x}" cy="{y}" r="3" fill="{[c["violet"], c["cyan"], c["green"], c["pink"]][li]}">'
                 f'<animate attributeName="opacity" values="0.3;0.9;0.3" dur="6s" begin="{begin}s" repeatCount="indefinite"/></circle>'
             )
     s.append(
@@ -447,10 +451,7 @@ def focus(mode: str) -> str:
 # ---------------------------------------------------------------- stillness (raked sand garden + ensō)
 def stillness(mode: str) -> str:
     W, H = 1000, 240
-    if mode == "dark":
-        bg1, bg2, line, stone, stone_hi, ink, glow = "#141311", "#191814", "#2c2a24", "#24221d", "#4d493f", "#e9e3d6", 0.14
-    else:
-        bg1, bg2, line, stone, stone_hi, ink, glow = "#f6f2ea", "#f0eadf", "#e0d7c6", "#5b5852", "#8d8980", "#2b2823", 0.10
+    bg1, bg2, line, stone, stone_hi, ink, glow = "#f3ead8", "#eadcc2", "#d9c9a8", "#6f6a60", "#a39d91", "#2b2823", 0.10
     rnd = random.Random(11)
     s = [svg_open(W, H, "A quiet raked-sand garden")]
     s.append(
@@ -519,6 +520,7 @@ def stillness(mode: str) -> str:
     # ensō — one brush stroke, drawn slowly, held, released
     ex, ey, er = enso
     s.append(f'<circle cx="{ex}" cy="{ey}" r="{er+40}" fill="url(#zmoon)"/>')
+    s.append('<circle cx="120" cy="52" r="70" fill="#e0714f" opacity="0.12"/><circle cx="120" cy="52" r="20" fill="#e0714f" opacity="0.9"/>')
     a0, sweep = math.radians(-70), math.radians(318)
     a1 = a0 + sweep
     x0, y0 = ex + er * math.cos(a0), ey + er * math.sin(a0)
@@ -549,7 +551,7 @@ def stillness(mode: str) -> str:
             f'<animate attributeName="opacity" values="0;0.45;0" dur="{dur:.1f}s" begin="{-rnd.uniform(0,dur):.1f}s" repeatCount="indefinite"/></circle>'
         )
     # one leaf, drifting down and settling on the sand
-    leaf = f'<path d="M0 -5 C5 -3 6 3 0 6 C-6 3 -5 -3 0 -5 Z" fill="{"#c9a36b" if mode == "dark" else "#b07d3b"}" opacity="0.85"/>'
+    leaf = '<path d="M0 -5 C5 -3 6 3 0 6 C-6 3 -5 -3 0 -5 Z" fill="#e27d8f" opacity="0.9"/>'
     s.append(
         f'<g opacity="0">{leaf}'
         f'<animateMotion path="M640 -12 C600 40 700 70 650 110 S620 170 668 196" dur="20s" repeatCount="indefinite" rotate="auto" keyPoints="0;1;1" keyTimes="0;0.6;1" calcMode="linear"/>'
