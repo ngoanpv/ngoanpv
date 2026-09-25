@@ -16,7 +16,7 @@
 
 </div>
 
-<a href="./film/khong.mp4"><img src="./film/khong-teaser.gif" alt="Không — a short film about an empty circle that builds things" width="100%"></a>
+https://github.com/user-attachments/assets/d004e622-3449-47ed-8aa3-8a15990c6421
 
 <br/>
 
