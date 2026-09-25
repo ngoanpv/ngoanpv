@@ -1,0 +1,578 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/500-italic.css">
+<link rel="stylesheet" href="node_modules/@fontsource/cormorant-garamond/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/jetbrains-mono/400.css">
+<style>html,body{margin:0;background:#0d0c0a}canvas{display:block}</style>
+</head><body><canvas id="c"></canvas>
+<script>
+/* "Không" — a short film about an empty circle that builds things.
+   Everything is a pure function of time: render(t). */
+const W = 1280, H = 720, S = 1.5, DUR = 64;
+const cv = document.getElementById('c');
+cv.width = W * S; cv.height = H * S; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+const ctx = cv.getContext('2d');
+const SERIF = '"Cormorant Garamond", serif', SANS = 'Inter, sans-serif', MONO = '"JetBrains Mono", monospace';
+const INK = '233,227,214', SAND = '205,177,126', MOSS = '159,174,136';
+const ink = a => `rgba(${INK},${a})`, sand = a => `rgba(${SAND},${a})`, moss = a => `rgba(${MOSS},${a})`;
+
+// ---------- math
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eout = x => 1 - Math.pow(1 - x, 3);
+const ein = x => x * x * x;
+const eback = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, k) => a + (b - a) * k;
+const win = (t, a, b, c, d) => Math.min(eio(seg(t, a, b)), 1 - eio(seg(t, c, d)));
+const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+function rng(seed) { return () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296; }
+function track(t, keys) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [t0, v0] = keys[i], [t1, v1] = keys[i + 1];
+    if (t <= t1) return lerp(v0, v1, eio((t - t0) / (t1 - t0)));
+  }
+  return keys[keys.length - 1][1];
+}
+function angLerp(a, b, k) { let d = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return a + d * k; }
+function alpha(a, fn) { if (a <= 0.002) return; ctx.save(); ctx.globalAlpha *= a; fn(); ctx.restore(); }
+
+// ---------- camera & layers
+function camera(t) {
+  let x = track(t, [[0, 640], [35, 640], [37.6, 1080], [40, 1120], [43.4, 1720], [45.6, 1760], [48.6, 1500], [64, 1500]]);
+  let y = track(t, [[0, 60], [3.4, 360], [40, 360], [43.4, 262], [45.6, 262], [48.6, 330], [64, 330]]);
+  const z = track(t, [[0, 1], [15, 1], [16.2, 0.94], [25, 0.94], [26.2, 1], [35, 1], [37.6, 0.96], [40, 0.96], [43.4, 1.06], [45.6, 1.06], [48.6, 0.62], [64, 0.62]]);
+  // a small shake when the boulder lands
+  const sh = seg(t, 26.75, 27.4); if (sh > 0 && sh < 1) { const a = 5 * (1 - sh); x += a * Math.sin(t * 90); y += a * Math.cos(t * 70); }
+  return { x, y, z };
+}
+let CAM;
+function layer(p) {
+  const zp = 1 + (CAM.z - 1) * p;
+  ctx.setTransform(S * zp, 0, 0, S * zp, S * (640 - ((CAM.x - 640) * p + 640) * zp), S * (360 - ((CAM.y - 360) * p + 360) * zp));
+}
+function screen() { ctx.setTransform(S, 0, 0, S, 0, 0); }
+function w2s(x, y) { return { x: (x - CAM.x) * CAM.z + 640, y: (y - CAM.y) * CAM.z + 360 }; }
+
+// ---------- world data
+const GROUND = 462, RIVER0 = 600, RIVER1 = 650, R0 = 24, CY = GROUND - R0 + 4;
+function ridge(seed, base, amp, x0, x1) {
+  const r = rng(seed), ph = [r() * 6, r() * 6, r() * 6, r() * 6], pts = [];
+  for (let x = x0; x <= x1; x += 16) pts.push([x, base - amp * (0.55 * Math.sin(x / 260 + ph[0]) + 0.3 * Math.sin(x / 97 + ph[1]) + 0.15 * Math.sin(x / 41 + ph[2]) + 0.6)]);
+  return pts;
+}
+const FAR = ridge(3, 420, 120, -1600, 4200), MID = ridge(8, 450, 70, -1200, 3800);
+const STONES = [[405, 520], [488, 482], [800, 482], [888, 522], [650, 560], [540, 566]];
+const HILL = [[1470, GROUND], [1560, 440], [1640, 392], [1700, 340], [1760, 288], [1812, 250], [1860, 262], [1930, 318], [2010, 380], [2110, 432], [2230, GROUND]];
+const STEPS = [[1624, 400], [1700, 344], [1764, 292], [1812, 252]];
+const r9 = rng(19);
+const LANTERNS = Array.from({ length: 130 }, () => {
+  let x = -300 + r9() * 3300, y = 478 + r9() * 230;
+  if (y > RIVER0 - 8 && y < RIVER1 + 8) y += 70;
+  const d = Math.hypot(x - 1780, (y - 470) * 1.8);
+  return { x, y, on: 46.2 + d / 520 + r9() * 0.3, f: r9() * 6 };
+});
+const REEDS = Array.from({ length: 18 }, (_, i) => ({ x: [140, 520, 1060, 1380, 1990, 2500][i % 6] + (hash(i) - 0.5) * 90, h: 26 + hash(i + 9) * 40, lean: (hash(i + 3) - 0.5) * 0.5 }));
+
+// ---------- drawing primitives
+function brushEnso(cx, cy, r, width, prog, gapDir, a, seed = 0, sx = 1, sy = 1, gap = 0.55) {
+  if (prog <= 0 || a <= 0.002) return;
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(sx, sy);
+  const start = gapDir + gap / 2, sweep = Math.PI * 2 - gap;
+  const N = Math.max(70, Math.floor(r * 5.5)), steps = Math.floor(N * prog), B = r > 40 ? 7 : 5;
+  for (let s = 0; s < steps; s++) {
+    const u = s / N, ang = start + sweep * u;
+    const w = width * Math.min(1, u / 0.05) * (1 - 0.65 * Math.pow(u, 2.2)) * (0.9 + 0.1 * Math.sin(u * 17 + seed));
+    const rr = r * (1 + 0.025 * Math.sin(u * 9 + seed) + 0.012 * Math.sin(u * 31 + seed));
+    const nx = Math.cos(ang), ny = Math.sin(ang), x = rr * nx, y = rr * ny;
+    for (let b = 0; b < B; b++) {
+      if (hash(b * 13.7 + Math.floor(u * 120) + seed) < 0.1 + 0.5 * Math.pow(u, 3)) continue;
+      const off = (b / (B - 1) - 0.5) * w;
+      ctx.fillStyle = ink(a * (0.32 + 0.22 * hash(b + s + seed)));
+      ctx.beginPath(); ctx.arc(x + nx * off, y + ny * off, w / B + 0.9, 0, 7); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function glow(x, y, r, col, a) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, col(a)); g.addColorStop(1, col(0));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+}
+function stroke(pts, w, a, col = ink) {
+  ctx.strokeStyle = col(a); ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+}
+function caption(t, a, b, c, d, text) {
+  const k = win(t, a, b, c, d);
+  alpha(k, () => {
+    screen(); ctx.font = `500 italic 35px ${SERIF}`; ctx.fillStyle = ink(0.92); ctx.textAlign = 'center';
+    ctx.fillText(text, 640, 660 + (1 - k) * 8); ctx.textAlign = 'left';
+  });
+}
+
+// ---------- the character
+function hop(t, t0, d, x0, y0, x1, y1, h) {
+  const p = (t - t0) / d;
+  if (p < 0) return null;
+  if (p >= 1) { const q = seg(t, t0 + d, t0 + d + 0.6); const wob = 0.07 * Math.sin(q * Math.PI * 4) * Math.exp(-4 * q) * (q < 1); return { x: x1, y: y1, sx: 1 - wob * 0.7, sy: 1 + wob, done: true }; }
+  if (p < 0.2) { const q = p / 0.2; return { x: x0, y: y0, sx: 1 + 0.16 * Math.sin(Math.PI * q), sy: 1 - 0.22 * Math.sin(Math.PI * q) }; }
+  if (p < 0.82) { const q = (p - 0.2) / 0.62, st = Math.abs(Math.cos(Math.PI * q)); return { x: lerp(x0, x1, eio(q)), y: lerp(y0, y1, q) - h * Math.sin(Math.PI * q), sx: 1 - 0.1 * st, sy: 1 + 0.15 * st }; }
+  const q = (p - 0.82) / 0.18; return { x: x1, y: y1, sx: 1 + 0.14 * Math.sin(Math.PI * q), sy: 1 - 0.2 * Math.sin(Math.PI * q) };
+}
+const HOPS = [
+  [26.95, 0.55, 640, CY, 640, CY, 16],            // startled by the boulder
+  [27.7, 0.8, 640, CY, 772, CY, 30],               // go to the boulder
+  [31.3, 0.8, 772, CY, 640, CY, 30],               // back
+  [35.2, 1.0, 640, CY, 900, CY, 40],
+  [36.3, 1.0, 900, CY, 1170, CY, 44],
+  [40.0, 0.9, 1170, CY, 1420, CY, 46],             // through the gate
+  [40.9, 0.75, 1420, CY, STEPS[0][0], STEPS[0][1] - R0, 40],
+  [41.65, 0.75, STEPS[0][0], STEPS[0][1] - R0, STEPS[1][0], STEPS[1][1] - R0, 40],
+  [42.4, 0.75, STEPS[1][0], STEPS[1][1] - R0, STEPS[2][0], STEPS[2][1] - R0, 40],
+  [43.15, 0.75, STEPS[2][0], STEPS[2][1] - R0, STEPS[3][0], STEPS[3][1] - R0, 36],
+];
+function voiceGaze(t) {
+  let g = -Math.PI / 4, last = -1;
+  for (const v of VOICES) if (t >= v.arrive && v.arrive > last) { last = v.arrive; g = v.side < 0 ? Math.PI : 0; }
+  return g;
+}
+function charState(t) {
+  let x = 640, y = CY, sx = 1, sy = 1;
+  for (const h of HOPS) { const s = hop(t, ...h); if (s) { x = s.x; y = s.y; sx = s.sx; sy = s.sy; } }
+  // wake up
+  const wq = seg(t, 3.9, 5.0); if (wq > 0 && wq < 1) { const w = 0.24 * Math.sin(wq * Math.PI * 3) * Math.exp(-3 * wq); sy *= 1 - w; sx *= 1 + w * 0.7; }
+  // effort pulses: emitting sub-agents, and chiselling
+  for (const te of [15.6, 20.8]) { const q = seg(t, te, te + 0.5); if (q > 0 && q < 1) { const w = 0.2 * Math.sin(Math.PI * q); sy *= 1 - w; sx *= 1 + w; } }
+  let jab = 0;
+  for (let j = 0; j < 5; j++) { const q = seg(t, 28.6 + j * 0.46, 28.6 + j * 0.46 + 0.3); if (q > 0 && q < 1) jab = Math.sin(Math.PI * q); }
+  x += jab * 14; sx *= 1 + jab * 0.12; sy *= 1 - jab * 0.08;
+  // breath
+  const br = 1 + 0.03 * Math.sin(t * Math.PI * 2 / 5);
+  sx *= br; sy *= br;
+  // gaze (the gap is where its attention goes)
+  let gaze = -Math.PI / 4;
+  if (t > 7.6 && t < 14.8) {
+    const g = voiceGaze(t);
+    gaze = angLerp(-Math.PI / 4, g, eout(seg(t, 7.8, 8.5)));
+  } else if (t >= 14.8 && t < 26) gaze = angLerp(0, -Math.PI / 2, eio(seg(t, 14.8, 15.6)));
+  if (t >= 26) gaze = angLerp(-Math.PI / 2, 0, eback(seg(t, 26.9, 27.5)));
+  if (t >= 34.8) gaze = 0;
+  if (t >= 43.8) gaze = angLerp(0, Math.PI / 2, eio(seg(t, 44.0, 45.2)));   // looks down at the valley
+  if (t >= 54) gaze = angLerp(Math.PI / 2, -Math.PI * 0.42, eio(seg(t, 54.6, 57.4)));
+  if (t >= 14.8 && t < 26) { const sc = seg(t, 15.6, 16.2); gaze += 0; }
+  return { x, y, sx, sy, gaze, prog: eio(seg(t, 2.2, 3.5)) };
+}
+
+// ---------- scene 2: voices
+const WORDS = ['xin chào', 'hello', '你好', 'สวัสดี', 'こんにちは', 'cảm ơn', 'halo'];
+const VOICES = [];
+{ let side = -1; for (let i = 0; i < 7; i++) { const spawn = 6.3 + i * 0.9; VOICES.push({ side, spawn, arrive: spawn + 1.67, word: WORDS[i], i }); side = -side; } }
+function voices(t) {
+  if (t < 6 || t > 15.5) return;
+  layer(1);
+  for (const v of VOICES) {
+    const sx = v.side < 0 ? -60 : 1340, R = (t - v.spawn) * 420;
+    if (R <= 0 || R > 900) continue;
+    const a = 0.3 * (1 - R / 900) * (1 - seg(t, 14, 15.2));
+    ctx.strokeStyle = ink(a); ctx.lineWidth = 1.4; ctx.beginPath();
+    for (let k = 0; k <= 60; k++) {
+      const ang = (v.side < 0 ? -Math.PI / 2 : Math.PI / 2) + (k / 60) * Math.PI * (v.side < 0 ? 1 : 1);
+      const th = v.side < 0 ? -Math.PI / 2 + (k / 60) * Math.PI : Math.PI / 2 + (k / 60) * Math.PI;
+      const rr = R + 4 * Math.sin(th * 18 + t * 9) * Math.sin(k / 60 * Math.PI);
+      const x = sx + rr * Math.cos(th), y = GROUND - 10 + rr * 0.34 * Math.sin(th);
+      k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // words the circle has heard, written in ink
+  for (const v of VOICES) {
+    const k = seg(t, v.arrive, v.arrive + 3.2);
+    if (k <= 0 || k >= 1) continue;
+    const a = Math.min(eout(seg(t, v.arrive, v.arrive + 0.5)), 1 - seg(t, v.arrive + 2.2, v.arrive + 3.2));
+    const x = 640 + v.side * (80 + (v.i % 3) * 55), y = CY - 34 - k * 70 - ((v.i >> 1) % 3) * 30;
+    alpha(a, () => {
+      ctx.font = `500 italic 26px ${SERIF}`; ctx.fillStyle = ink(0.85); ctx.textAlign = 'center';
+      if (/[^\u0000-ɏḀ-ỿ]/.test(v.word)) ctx.font = `400 22px ${SANS}`;
+      ctx.fillText(v.word, x, y); ctx.textAlign = 'left';
+    });
+  }
+}
+
+// ---------- scene 3: one mind becomes many
+const AG = STONES.map((s, i) => ({ s, i }));
+function agentPos(t, i, t0, dOut, dStay, dBack) {
+  const [sx, sy] = STONES[i], cx = 640, cy = CY;
+  const mx = (cx + sx) / 2, my = Math.min(cy, sy) - 70 - (i % 3) * 16;
+  const bez = (p) => ({ x: (1 - p) * (1 - p) * cx + 2 * (1 - p) * p * mx + p * p * sx, y: (1 - p) * (1 - p) * cy + 2 * (1 - p) * p * my + p * p * (sy - 12) });
+  if (t < t0) return null;
+  if (t < t0 + dOut) { const p = eio(seg(t, t0, t0 + dOut)); return { ...bez(p), carry: false, phase: 'out', p }; }
+  if (t < t0 + dOut + dStay) return { ...bez(1), carry: false, phase: 'stay' };
+  if (t < t0 + dOut + dStay + dBack) { const p = eio(seg(t, t0 + dOut + dStay, t0 + dOut + dStay + dBack)); return { ...bez(1 - p), carry: true, phase: 'back', p }; }
+  return null;
+}
+function knowledge(t) {
+  const a = win(t, 14.4, 15.6, 25.2, 26.4) + (t > 26 && t < 35.5 ? 1 - seg(t, 26, 26.6) * 0.5 : 0) * 0;
+  const va = t < 26 ? win(t, 14.4, 15.6, 99, 100) : 1 - eio(seg(t, 34.4, 35.6));
+  if (va <= 0) return;
+  layer(1);
+  // stones (always there once revealed)
+  STONES.forEach(([x, y], i) => {
+    alpha(va, () => {
+      ctx.strokeStyle = ink(0.12); ctx.lineWidth = 1;
+      for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.ellipse(x, y, 16 + k * 10, (16 + k * 10) * 0.42, 0, 0, 7); ctx.stroke(); }
+      ctx.fillStyle = '#2b2923'; ctx.beginPath(); ctx.ellipse(x, y, 16, 9, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = ink(0.12); ctx.beginPath(); ctx.ellipse(x - 4, y - 3, 7, 3, 0, 0, 7); ctx.fill();
+    });
+  });
+  // knowledge graph threads between stones
+  const links = [[0, 1], [1, 5], [5, 4], [4, 3], [3, 2], [1, 2]];
+  links.forEach(([i, j], n) => {
+    const k = eout(seg(t, 18.6 + n * 0.18, 19.6 + n * 0.18)) * (1 - seg(t, 25, 26));
+    if (k <= 0) return;
+    const [x0, y0] = STONES[i], [x1, y1] = STONES[j];
+    stroke([[x0, y0], [lerp(x0, x1, k), lerp(y0, y1, k)]], 1.2, 0.22 * va);
+  });
+  // citations: threads from the circle to the stones it drew from
+  STONES.forEach(([x, y], i) => {
+    const k = eout(seg(t, 18.4 + i * 0.12, 19.4 + i * 0.12)) * (1 - seg(t, 24.6, 25.6));
+    if (k <= 0) return;
+    ctx.setLineDash([3, 6]); stroke([[640, CY], [lerp(640, x, k), lerp(CY, y, k)]], 1, 0.3); ctx.setLineDash([]);
+  });
+  // sub-agents
+  for (const round of [{ t0: 15.9, dOut: 1.3, dStay: 0.5, dBack: 1.2, st: 0.16 }, { t0: 21.0, dOut: 0.85, dStay: 0.3, dBack: 0.8, st: 0.1 }]) {
+    AG.forEach(({ i }) => {
+      const P = agentPos(t, i, round.t0 + i * round.st, round.dOut, round.dStay, round.dBack);
+      if (!P) return;
+      const o = w2s(P.x, P.y);
+      screen();
+      const dir = P.phase === 'back' ? Math.atan2(CY - STONES[i][1], 640 - STONES[i][0]) : Math.atan2(STONES[i][1] - CY, STONES[i][0] - 640);
+      brushEnso(o.x, o.y, 9 * CAM.z, 3 * CAM.z, 1, dir, 0.95, i * 3);
+      if (P.carry) glow(o.x, o.y, 9 * CAM.z, sand, 0.9);
+      if (P.phase === 'stay') { const s = w2s(STONES[i][0], STONES[i][1]); glow(s.x, s.y, 34 * CAM.z, sand, 0.35); }
+      layer(1);
+    });
+  }
+  // what came back gathers in the centre
+  const g = seg(t, 18.6, 19.6) * (1 - seg(t, 24.4, 25.4));
+  if (g > 0) { screen(); const o = w2s(640, CY); glow(o.x, o.y, 22 * CAM.z, sand, 0.35 * g); }
+}
+
+// ---------- scene 4: lighter, faster
+const r4 = rng(4);
+const JAG = Array.from({ length: 16 }, (_, i) => 1 + (r4() - 0.5) * 0.55);
+const BX = 872, BY = 416;
+function boulder(t) {
+  if (t < 26.2 || t > 35.6) return;
+  layer(1);
+  const fall = ein(seg(t, 26.2, 26.8)), y = lerp(-260, BY, fall);
+  const m = eio(seg(t, 28.5, 31.1));
+  const R = lerp(50, 22, m), ry = lerp(1, 0.72, m), a = 1 - seg(t, 34.6, 35.6);
+  alpha(a, () => {
+    ctx.beginPath();
+    for (let k = 0; k <= 16; k++) {
+      const ang = (k % 16) / 16 * Math.PI * 2, j = lerp(JAG[k % 16], 1, m);
+      const x = BX + R * j * Math.cos(ang), yy = y + (lerp(0, 50 - 22 * 0.72, m)) + R * j * ry * Math.sin(ang);
+      k ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy);
+    }
+    ctx.closePath(); ctx.fillStyle = '#2d2a24'; ctx.fill(); ctx.strokeStyle = ink(0.35); ctx.lineWidth = 1.5; ctx.stroke();
+    if (m > 0.6) { ctx.fillStyle = ink(0.14 * (m - 0.6) / 0.4); ctx.beginPath(); ctx.ellipse(BX - 6, y + 32, 8, 3, 0, 0, 7); ctx.fill(); }
+    // cracks on the rough stone
+    alpha(1 - m, () => { stroke([[BX - 20, y - 18], [BX - 4, y - 2], [BX + 8, y - 10], [BX + 20, y + 14]], 1.2, 0.3); });
+  });
+  // dust when it lands
+  const d = seg(t, 26.8, 27.8);
+  if (d > 0 && d < 1) for (let k = 0; k < 8; k++) {
+    const dir = (k / 7 - 0.5) * 2, x = BX + dir * (46 + d * (50 + 40 * hash(k))), yy = GROUND - 6 - hash(k + 3) * 14 - Math.sin(Math.PI * d) * (8 + 14 * hash(k + 7));
+    glow(x, yy, 10 + d * 16, ink, 0.12 * (1 - d));
+  }
+  // chisel strokes and shards
+  for (let j = 0; j < 5; j++) {
+    const tj = 28.6 + j * 0.46 + 0.15, q = seg(t, tj, tj + 0.25);
+    if (q > 0 && q < 1) stroke([[BX - 30 + j * 6, BY - 30 + j * 10], [BX + 26 - j * 4, BY + 20 - j * 6]], 2.5, 0.7 * (1 - q));
+    for (let s = 0; s < 4; s++) {
+      const sq = seg(t, tj, tj + 0.9); if (sq <= 0 || sq >= 1) continue;
+      const vx = (hash(j * 7 + s) - 0.3) * 140, vy = -120 - hash(j + s * 3) * 90;
+      const x = BX + 20 + vx * sq, yy = BY - 10 + vy * sq + 260 * sq * sq;
+      ctx.fillStyle = ink(0.5 * (1 - sq)); ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x + 5, yy + 2); ctx.lineTo(x + 1, yy + 6); ctx.fill();
+    }
+  }
+}
+function orbiters(t) {
+  const a = win(t, 26.9, 27.6, 34.4, 35.2);
+  if (a <= 0) return;
+  // angle = integral of speed (slow before polishing, quick after)
+  const slow = 0.8, fast = 3.4, tb = 31.3;
+  const th = t < tb ? (t - 26.9) * slow : (tb - 26.9) * slow + (t - tb) * lerp(slow, fast, eout(seg(t, tb, tb + 1)));
+  const c = charState(t), cx = c.x, cy = c.y;
+  screen();
+  for (let k = 0; k < 3; k++) {
+    const ang = th + k * Math.PI * 2 / 3, px = cx + 64 * Math.cos(ang), py = cy - 8 + 26 * Math.sin(ang);
+    const o = w2s(px, py);
+    alpha(a, () => brushEnso(o.x, o.y, 8 * CAM.z, 2.6 * CAM.z, 1, ang + Math.PI / 2, 0.9, k * 5));
+  }
+  // latency: a thin arc that takes 5s before, 2s after
+  const o = w2s(cx, cy);
+  const per = t < tb + 0.4 ? 5 : 2, t0 = t < tb + 0.4 ? 26.9 : tb + 0.4;
+  const f = ((t - t0) % per) / per;
+  alpha(a * 0.8, () => {
+    ctx.strokeStyle = sand(0.55); ctx.lineWidth = 1.6; ctx.beginPath();
+    ctx.arc(o.x, o.y, 40 * CAM.z, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); ctx.stroke();
+    ctx.font = `400 15px ${MONO}`; ctx.fillStyle = ink(0.6); ctx.textAlign = 'center';
+    const before = 1 - seg(t, tb, tb + 0.6), after = seg(t, tb + 0.3, tb + 0.9);
+    ctx.globalAlpha *= before || 0.0001; ctx.fillText('5.0 s', o.x, o.y - 56 * CAM.z);
+    ctx.globalAlpha = a * 0.8 * after; ctx.fillStyle = sand(0.9); ctx.fillText('≈ 2 s', o.x, o.y - 56 * CAM.z);
+    ctx.textAlign = 'left';
+  });
+}
+
+// ---------- scene 5: the gate and the hill
+const GX = 1300;
+function gate(t) {
+  layer(1);
+  const a = seg(t, 33, 35);
+  if (a <= 0) return;
+  alpha(a, () => {
+    stroke([[GX - 38, GROUND + 2], [GX - 34, GROUND - 150]], 9, 0.5);
+    stroke([[GX + 38, GROUND + 2], [GX + 34, GROUND - 150]], 9, 0.5);
+    stroke([[GX - 70, GROUND - 160], [GX - 30, GROUND - 158], [GX + 30, GROUND - 158], [GX + 70, GROUND - 163]], 8, 0.55);
+    stroke([[GX - 50, GROUND - 128], [GX + 50, GROUND - 128]], 5, 0.45);
+    // the gate lights up when something true passes
+    let lit = 0;
+    for (const A of GATE_AGENTS) { const q = seg(t, A.tGate, A.tGate + 0.6); if (A.ok && q > 0 && q < 1) lit = Math.max(lit, Math.sin(Math.PI * q)); }
+    if (lit > 0) { stroke([[GX - 66, GROUND - 160], [GX + 66, GROUND - 162]], 8, 0.8 * lit, sand); }
+  });
+}
+const GATE_AGENTS = Array.from({ length: 5 }, (_, i) => ({ i, t0: 37.3 + i * 0.5, ok: i !== 3 }));
+GATE_AGENTS.forEach(A => { A.tGate = A.t0 + (GX - 1210) / 260; });
+function gateAgents(t) {
+  for (const A of GATE_AGENTS) {
+    if (t < A.t0) continue;
+    let x = 1190 + (t - A.t0) * 260, wob = 0, a = 1, held = false;
+    if (!A.ok && x > GX - 60) { x = GX - 60; held = true; wob = Math.sin(t * 30) * 2.5; a = 1 - 0.6 * seg(t, A.tGate, A.tGate + 1.2); }
+    if (A.ok && x > GX) a = 1 - seg(x, 1560, 1700);
+    a *= 1 - seg(t, 44, 45);
+    if (a <= 0) continue;
+    const y = CY + 8 - Math.abs(Math.sin((t - A.t0) * 5)) * 10 * (held ? 0 : 1);
+    const o = w2s(x + wob, y); screen();
+    brushEnso(o.x, o.y, 10 * CAM.z, 3 * CAM.z, 1, held ? Math.sin(t * 9) : 0, a, A.i * 7);
+    if (A.ok && x > GX) { glow(o.x, o.y, 12 * CAM.z, sand, 0.5 * a); }
+  }
+  // "abstain" whisper next to the held one
+  const h = GATE_AGENTS[3];
+  const k = win(t, h.tGate + 0.2, h.tGate + 0.8, 43.8, 44.6);
+  if (k > 0) { const o = w2s(GX - 112, CY - 30); screen(); alpha(k, () => { ctx.font = `400 13px ${MONO}`; ctx.fillStyle = ink(0.55); ctx.textAlign = 'center'; ctx.fillText('not sure yet', o.x, o.y); ctx.textAlign = 'left'; }); }
+}
+function hill(t) {
+  layer(1);
+  ctx.beginPath(); HILL.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
+  ctx.fillStyle = '#1f1d19'; ctx.fill();
+  stroke(HILL.slice(0, -1), 1.5, 0.22);
+  STEPS.forEach(([x, y]) => { ctx.fillStyle = '#2d2a24'; ctx.beginPath(); ctx.ellipse(x, y + 2, 14, 4, 0, 0, 7); ctx.fill(); });
+  const k = win(t, 43.9, 44.8, 53.5, 54.4);
+  alpha(k * 0.7, () => {
+    ctx.font = `400 13px ${MONO}`; ctx.fillStyle = sand(0.9); ctx.textAlign = 'center';
+    ctx.fillText('1st · national LLM benchmarks', 1812, 190);
+    ctx.fillStyle = ink(0.55); ctx.fillText('9th · Interspeech multilingual ASR', 1812, 208); ctx.textAlign = 'left';
+  });
+}
+
+// ---------- scene 6: reach
+function lanterns(t) {
+  if (t < 45.5) return;
+  layer(1);
+  const fade = 1 - seg(t, 54, 56);
+  for (const L of LANTERNS) {
+    const k = eback(seg(t, L.on, L.on + 0.5));
+    if (k <= 0) continue;
+    const fl = 0.8 + 0.2 * Math.sin(t * 3 + L.f);
+    glow(L.x, L.y, 16 * k, sand, 0.22 * fl * fade);
+    ctx.fillStyle = sand(0.9 * fade); ctx.beginPath(); ctx.arc(L.x, L.y, 2.4 * k, 0, 7); ctx.fill();
+  }
+  // a few paper boats with lanterns drift down the river
+  for (let i = 0; i < 4; i++) {
+    const k = seg(t, 47 + i * 0.8, 55 + i * 0.8); if (k <= 0) continue;
+    const x = 900 + i * 220 + k * 520, y = RIVER0 + 22 + Math.sin(t * 2 + i) * 2;
+    alpha(win(t, 47 + i * 0.8, 47.8 + i * 0.8, 53.6, 54.6), () => {
+      ctx.fillStyle = ink(0.8); ctx.beginPath();
+      ctx.moveTo(x - 20, y); ctx.lineTo(x + 20, y); ctx.lineTo(x + 12, y + 9); ctx.lineTo(x - 12, y + 9); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x - 8, y); ctx.lineTo(x, y - 16); ctx.lineTo(x + 8, y); ctx.closePath(); ctx.fillStyle = ink(0.65); ctx.fill();
+      glow(x + 14, y - 6, 12, sand, 0.4); ctx.fillStyle = sand(0.95); ctx.beginPath(); ctx.arc(x + 14, y - 6, 2.2, 0, 7); ctx.fill();
+    });
+  }
+}
+
+// ---------- world
+function world(t) {
+  screen();
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0c0b09'); g.addColorStop(0.62, '#1a1814'); g.addColorStop(1, '#141310');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // moon
+  layer(0.08); glow(1020, 130, 150, ink, 0.07); ctx.fillStyle = ink(0.13); ctx.beginPath(); ctx.arc(1020, 130, 30, 0, 7); ctx.fill();
+  // mountains
+  layer(0.25); ctx.beginPath(); ctx.moveTo(FAR[0][0], 1400); FAR.forEach(([x, y]) => ctx.lineTo(x, y)); ctx.lineTo(FAR[FAR.length - 1][0], 1400); ctx.fillStyle = ink(0.05); ctx.fill();
+  layer(0.45); ctx.beginPath(); ctx.moveTo(MID[0][0], 1400); MID.forEach(([x, y]) => ctx.lineTo(x, y)); ctx.lineTo(MID[MID.length - 1][0], 1400); ctx.fillStyle = ink(0.07); ctx.fill();
+  // mist
+  layer(0.6);
+  for (let i = 0; i < 7; i++) { const x = ((i * 520 + t * 7) % 3600) - 800, y = 380 + (i % 3) * 30; ctx.fillStyle = ink(0.03); ctx.beginPath(); ctx.ellipse(x, y, 420, 26, 0, 0, 7); ctx.fill(); }
+  // ground
+  layer(1);
+  ctx.fillStyle = '#1b1915'; ctx.fillRect(-2000, GROUND, 6000, 1400);
+  const hz = ctx.createLinearGradient(0, GROUND - 20, 0, GROUND + 30); hz.addColorStop(0, ink(0)); hz.addColorStop(0.5, ink(0.05)); hz.addColorStop(1, ink(0));
+  ctx.fillStyle = hz; ctx.fillRect(-2000, GROUND - 20, 6000, 50);
+  hill(t);
+  // raked sand
+  ctx.strokeStyle = ink(0.055); ctx.lineWidth = 1.1;
+  const x0 = CAM.x - 1200 / CAM.z, x1 = CAM.x + 1200 / CAM.z;
+  for (let y0 = GROUND + 12; y0 < RIVER0 - 6; y0 += 10) {
+    ctx.beginPath();
+    for (let x = x0; x <= x1; x += 18) { const y = y0 + 1.2 * Math.sin(x / 60 + y0 * 0.3); x === x0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+  // river
+  ctx.fillStyle = '#12110e'; ctx.fillRect(-2000, RIVER0, 6000, RIVER1 - RIVER0);
+  stroke([[-2000, RIVER0], [4000, RIVER0]], 1, 0.12); stroke([[-2000, RIVER1], [4000, RIVER1]], 1, 0.08);
+  for (let i = 0; i < 90; i++) {
+    const len = 20 + hash(i) * 50, y = RIVER0 + 8 + hash(i + 5) * 34, sp = 20 + hash(i + 2) * 25;
+    const x = ((hash(i + 9) * 4200 - t * sp) % 4200 + 4200) % 4200 - 800;
+    stroke([[x, y], [x + len, y]], 1, 0.1);
+  }
+}
+function foreground(t) {
+  layer(1.25);
+  REEDS.forEach((r, i) => {
+    const sway = 0.08 * Math.sin(t * 0.9 + i);
+    const bx = r.x, by = 780, tx = bx + (r.lean + sway) * r.h * 1.6, ty = by - r.h * 1.8;
+    ctx.strokeStyle = 'rgba(8,7,6,0.55)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + (tx - bx) * 0.2, (by + ty) / 2, tx, ty); ctx.stroke();
+  });
+}
+function fireflies(t) {
+  const a = Math.max(win(t, 44, 47, 54, 56), 0.35 * win(t, 0, 4, 8, 10));
+  if (a <= 0) return;
+  screen();
+  for (let i = 0; i < 26; i++) {
+    const x = (hash(i) * 1400 + Math.sin(t * 0.3 + i) * 40 + t * 4) % 1400 - 60, y = 200 + hash(i + 4) * 420 + Math.sin(t * 0.5 + i * 2) * 20;
+    const fl = 0.5 + 0.5 * Math.sin(t * 2 + i * 3);
+    glow(x, y, 8, sand, 0.35 * a * fl); ctx.fillStyle = sand(0.8 * a * fl); ctx.beginPath(); ctx.arc(x, y, 1.4, 0, 7); ctx.fill();
+  }
+}
+
+// ---------- scene 1: the drop
+function birth(t) {
+  if (t > 6) return;
+  layer(1);
+  const f = seg(t, 1.0, 2.0);
+  if (f > 0 && f < 1) {
+    const y = lerp(40, CY + 20, ein(f));
+    ctx.fillStyle = ink(0.9); ctx.beginPath(); ctx.ellipse(640, y, 4, 4 + 8 * f, 0, 0, 7); ctx.fill();
+  }
+  const s = seg(t, 2.0, 5.0);
+  if (s > 0 && s < 1) for (let k = 0; k < 3; k++) {
+    const q = clamp(s * 1.3 - k * 0.15); if (q <= 0) continue;
+    const r = 10 + q * 180;
+    ctx.strokeStyle = ink(0.35 * (1 - q)); ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(640, CY + 20, r, r * 0.3, 0, 0, 7); ctx.stroke();
+  }
+  const sp = seg(t, 2.0, 2.7);
+  if (sp > 0 && sp < 1) for (let k = 0; k < 7; k++) {
+    const vx = (k - 3) * 38, vy = -110 - hash(k) * 60;
+    ctx.fillStyle = ink(0.7 * (1 - sp)); ctx.beginPath(); ctx.arc(640 + vx * sp, CY + 20 + vy * sp + 300 * sp * sp, 2, 0, 7); ctx.fill();
+  }
+}
+
+// ---------- ending
+function endingFog(t) {
+  const fog = eio(seg(t, 54.2, 56.4));
+  if (fog > 0) {
+    screen(); ctx.fillStyle = `rgba(20,19,16,${fog})`; ctx.fillRect(0, 0, W, H);
+    // sand lines come back, quietly
+    alpha(seg(t, 56, 58), () => {
+      ctx.strokeStyle = ink(0.05); ctx.lineWidth = 1.1;
+      for (let y0 = 14; y0 < H; y0 += 15) {
+        ctx.beginPath(); let pen = false;
+        for (let x = -10; x <= W + 10; x += 8) {
+          const y = y0 + 1.5 * Math.sin(x / 55 + y0 * 0.21);
+          const dx = (x - 640) / 220, dy = (y - 290) / 205;
+          if (dx * dx + dy * dy < 1) { pen = false; continue; }
+          pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true;
+        }
+        ctx.stroke();
+      }
+    });
+  }
+}
+function ending(t) {
+  if (t < 57.8) return;
+  screen();
+  alpha(eout(seg(t, 57.8, 59.2)), () => {
+    ctx.textAlign = 'center';
+    ctx.font = `600 58px ${SERIF}`; ctx.fillStyle = ink(0.95); ctx.fillText('Phạm Văn Ngoan', 640, 548);
+    ctx.font = `400 18px ${SANS}`; ctx.fillStyle = ink(0.55); ctx.fillText('builder  ·  github.com/ngoanpv', 640, 586);
+    ctx.textAlign = 'left';
+  });
+  alpha(eout(seg(t, 59.4, 60.6)) * 0.85, () => {
+    ctx.font = `400 16px ${MONO}`;
+    const parts = [['model.fit(', ink(0.45)], ['curiosity', sand(0.85)], [', epochs=', ink(0.45)], ['∞', moss(0.9)], [')', ink(0.45)]];
+    const full = parts.map(p => p[0]).join(''); let x = 640 - ctx.measureText(full).width / 2;
+    parts.forEach(([s, c]) => { ctx.fillStyle = c; ctx.fillText(s, x, 632); x += ctx.measureText(s).width; });
+  });
+}
+
+// ---------- the protagonist, drawn last, always in screen space
+function protagonist(t) {
+  const c = charState(t);
+  let o = w2s(c.x, c.y), r = R0 * CAM.z, w = 6.5 * CAM.z;
+  const up = eio(seg(t, 54.6, 57.6));
+  if (up > 0) {
+    const from = (() => { const cam = camera(54.6); const cs = charState(54.6); return { x: (cs.x - cam.x) * cam.z + 640, y: (cs.y - cam.y) * cam.z + 360, r: R0 * cam.z }; })();
+    o = { x: lerp(from.x, 640, up), y: lerp(from.y, 290, up) }; r = lerp(from.r, 140, up); w = lerp(6.5 * 0.62, 17, up);
+  }
+  screen();
+  // a faint light inside when it understands something
+  const insight = Math.max(win(t, 18.6, 19.4, 24, 25), win(t, 31.2, 31.8, 33, 34), win(t, 43.9, 44.6, 53, 54.5) * 0.8, win(t, 57.4, 58.6, 99, 100) * 0.6);
+  if (insight > 0) glow(o.x, o.y, r * 1.3, sand, 0.18 * insight);
+  brushEnso(o.x, o.y, r, w, c.prog, c.gaze, 1, 11, up > 0 ? lerp(c.sx, 1 + 0.02 * Math.sin(t * Math.PI * 2 / 5), up) : c.sx, up > 0 ? lerp(c.sy, 1 + 0.02 * Math.sin(t * Math.PI * 2 / 5), up) : c.sy);
+}
+
+// ---------- the film
+function render(t) {
+  CAM = camera(t);
+  world(t);
+  birth(t);
+  voices(t);
+  knowledge(t);
+  boulder(t);
+  gate(t);
+  lanterns(t);
+  gateAgents(t);
+  orbiters(t);
+  foreground(t);
+  fireflies(t);
+  endingFog(t);
+  protagonist(t);
+  // opening mist
+  const mist = 1 - eio(seg(t, 0, 3.2));
+  if (mist > 0) { screen(); ctx.fillStyle = `rgba(20,19,16,${0.85 * mist})`; ctx.fillRect(0, 0, W, H); }
+  ending(t);
+  caption(t, 3.8, 4.8, 6.2, 7.0, 'Empty — and so, room for anything.');
+  caption(t, 9.0, 10.0, 14.0, 14.8, 'It begins by listening.');
+  caption(t, 16.4, 17.4, 24.6, 25.4, 'One mind becomes many, each with its own craft.');
+  caption(t, 27.6, 28.6, 34.2, 35.0, 'Make it lighter. Make it faster.');
+  caption(t, 36.4, 37.4, 39.8, 40.6, 'Measure honestly. Pass only what holds up.');
+  caption(t, 41.0, 42.0, 44.6, 45.4, 'Then climb, one honest step at a time.');
+  caption(t, 47.0, 48.0, 53.2, 54.0, 'And let it reach everyone it can help.');
+}
+
+window.render = render; window.DUR = DUR;
+window.ready = (async () => {
+  const samples = ['400 20px Inter', 'italic 500 20px "Cormorant Garamond"', '600 20px "Cormorant Garamond"', '400 20px "JetBrains Mono"'];
+  await Promise.all(samples.map(f => document.fonts.load(f, 'Phạm Văn Ngoan ∞ ≈ — cảm ơn')));
+  return true;
+})();
+if (location.hash === '#live') {
+  const t0 = performance.now();
+  window.ready.then(() => { const loop = () => { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(loop); }; loop(); });
+}
+</script></body></html>
