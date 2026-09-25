@@ -198,13 +198,9 @@ def wrap(text, width, lines):
 
 
 def fade_in(delay, dur=0.6, rise=10):
-    total = delay + dur
-    k = delay / total
-    return (
-        f'<animate attributeName="opacity" values="0;0;1" keyTimes="0;{k:.3f};1" dur="{total:.2f}s" fill="freeze"/>'
-        f'<animateTransform attributeName="transform" type="translate" additive="sum" values="0 {rise};0 {rise};0 0" '
-        f'keyTimes="0;{k:.3f};1" dur="{total:.2f}s" fill="freeze" calcMode="spline" keySplines="0 0 1 1;0.2 0.8 0.2 1"/>'
-    )
+    """Kept for compatibility: cards are static so they always render, even
+    where an image's animation timeline never starts (e.g. lazy-loaded)."""
+    return ""
 
 
 # ------------------------------------------------------------------ apps shelf
@@ -305,8 +301,7 @@ def stats_svg(st, mode):
     for i, (name, col, pct) in enumerate(st["languages"]):
         w = lw * pct / 100
         s.append(
-            f'<rect x="{x:.1f}" y="66" height="10" width="{w:.1f}" fill="{col}">'
-            f'<animate attributeName="width" values="0;0;{w:.1f}" keyTimes="0;{0.3+i*0.12:.2f};1" dur="{1.1+i*0.12:.2f}s" fill="freeze"/></rect>'
+            f'<rect x="{x:.1f}" y="66" height="10" width="{w:.1f}" fill="{col}"/>'
         )
         x += w
     s.append("</g>")
