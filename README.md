@@ -4,12 +4,14 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/banner-dark.svg">
-  <img alt="Phạm Văn Ngoan — Builder: multi-agent systems, voice AI, evals" src="./assets/banner-light.svg" width="100%">
+  <img alt="Phạm Văn Ngoan (Pham Van Ngoan) — AI builder: multi-agent systems, voice AI, evals" src="./assets/banner-light.svg" width="100%">
 </picture>
 
 <br/>
 
-<p><i>Xin chào — I build AI systems that listen, reason and hold up in production.</i></p>
+<h3>Xin chào, I'm Phạm Văn Ngoan <sub>(Pham Van Ngoan)</sub></h3>
+
+<p><i>AI builder — I build AI systems that listen, reason and hold up in production.</i></p>
 
 <a href="https://www.linkedin.com/in/ngoanpv"><img src="https://img.shields.io/badge/LinkedIn-ngoanpv-8a8170?style=flat-square&logo=linkedin&logoColor=e9e3d6&labelColor=2b2823" alt="LinkedIn"></a>
 <img src="https://komarev.com/ghpvc/?username=ngoanpv&label=visitors&color=8a8170&labelColor=2b2823&style=flat-square" alt="profile visitors">
@@ -123,9 +125,10 @@ https://github.com/user-attachments/assets/a3605ff7-a7de-4f03-806f-cfdfa70e87f6
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/stillness-dark.svg">
-  <img alt="A quiet raked-sand garden" src="./assets/stillness-light.svg" width="100%">
+  <img alt="A quiet raked-sand garden by Phạm Văn Ngoan" src="./assets/stillness-light.svg" width="100%">
 </picture>
 
 <div align="center">
+<sub><b>Phạm Văn Ngoan</b> · Pham Van Ngoan · AI builder · Viet Nam</sub><br/>
 <sub>slow is smooth · smooth is fast</sub>
 </div>
