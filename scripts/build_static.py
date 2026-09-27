@@ -15,7 +15,7 @@ CONFIG = {
     "name": "Phạm Văn Ngoan",
     "handle": "~/ngoanpv",
     "roles": "Builder  ·  Multi-agent systems  ·  Voice AI  ·  Evals",
-    "pills": ["Idea → Ship → Learn", "Viet Nam"],
+    "pills": ["Idea → Ship → Learn"],
     "caption": ("curiosity", "∞"),
     "command": "python doing_cool_stuff.py",
     "modules": [
