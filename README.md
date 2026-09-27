@@ -9,7 +9,7 @@
 
 <br/>
 
-<h3>Xin chào, I'm Phạm Văn Ngoan <sub>(Pham Van Ngoan)</sub></h3>
+<h3>Xin chào, I'm Phạm Văn Ngoan <sub>(Pham Van Ngoan · Ngoan Pham)</sub></h3>
 
 <p><i>AI builder — I build AI systems that listen, reason and hold up in production.</i></p>
 
@@ -129,6 +129,6 @@ https://github.com/user-attachments/assets/a3605ff7-a7de-4f03-806f-cfdfa70e87f6
 </picture>
 
 <div align="center">
-<sub><b>Phạm Văn Ngoan</b> · Pham Van Ngoan · AI builder · Viet Nam</sub><br/>
+<sub><b>Phạm Văn Ngoan</b> (Ngoan Phạm) · AI builder · Viet Nam</sub><br/>
 <sub>slow is smooth · smooth is fast</sub>
 </div>
