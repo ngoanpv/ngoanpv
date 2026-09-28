@@ -55,13 +55,15 @@ https://github.com/user-attachments/assets/a3605ff7-a7de-4f03-806f-cfdfa70e87f6
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/exploring-dark.svg">
-  <img alt="A simulated crowd passing an idea through friend networks, next to an evaluation gate that either concludes or abstains" src="./assets/exploring-light.svg" width="100%">
+  <img alt="A simulated crowd passing an idea through friend networks, an evaluation gate that concludes or abstains, a small robot keeping and recalling memories, and a model compressed to run on a phone" src="./assets/exploring-light.svg" width="100%">
 </picture>
 
 - **Simulated crowds** — multi-agent personas built from real people's answers, so a team can try an ad, a price or a policy on a crowd *before* it reaches real users.
 - **How reactions spread** — agents with friend networks who only pass something on when they're genuinely convinced, to surface second-order effects.
 - **Evals that can say "not sure"** — gates that check agreement with real people (holdout questions, rank correlation, backtests), stability across reruns and bias, and abstain when the evidence isn't there.
 - **Benchmarking agents** — measuring how reliable, consistent and well-calibrated LLM agents really are, beyond the demo.
+- **Memory for agents and robots** — what to keep, what to let go, and how to recall the right thing at the right moment, across sessions and in the physical world.
+- **Models on device** — small, quantized and distilled models that run privately and offline on phones and edge hardware.
 
 ## Open source
 

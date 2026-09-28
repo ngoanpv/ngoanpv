@@ -30,7 +30,7 @@ CONFIG = {
         ("home", "Viet Nam"),
         ("ships", "agents, voice AI & a few apps"),
         ("loves", "small details, big impact"),
-        ("into", "agent evals · simulated crowds"),
+        ("into", "evals · agent memory · on-device"),
         ("fuel", "cà phê sữa đá"),
     ],
 }
@@ -564,19 +564,19 @@ def stillness(mode: str) -> str:
 # ---------------------------------------------------------------- exploring (simulated crowd + eval gate)
 def exploring(mode: str) -> str:
     c = THEMES[mode]
-    W, H = 1000, 300
+    W, H = 1000, 620
     T = 12.0
     rnd = random.Random(21)
-    s = [svg_open(W, H, "Exploring: simulated crowds, how ideas spread, and evaluation gates that can abstain")]
+    s = [svg_open(W, H, "Exploring: simulated crowds, evaluation gates that can abstain, memory for agents and robots, and models that run on device")]
     s.append(
         f'<defs><filter id="eg" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.5" result="b"/>'
         f'<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>'
-        f'<rect x="0.5" y="0.5" width="599" height="{H-1}" rx="16" fill="{c["panel"]}" stroke="{c["border"]}"/>'
-        f'<rect x="620.5" y="0.5" width="379" height="{H-1}" rx="16" fill="{c["panel"]}" stroke="{c["border"]}"/>'
+        f'<rect x="0.5" y="0.5" width="599" height="299" rx="16" fill="{c["panel"]}" stroke="{c["border"]}"/>'
+        f'<rect x="620.5" y="0.5" width="379" height="299" rx="16" fill="{c["panel"]}" stroke="{c["border"]}"/>'
         f'<text x="24" y="34" font-family="{MONO}" font-size="13" fill="{c["muted"]}">crowd.<tspan fill="{c["cyan"]}">simulate</tspan>(decision)</text>'
         f'<text x="576" y="34" text-anchor="end" font-family="{SANS}" font-size="11.5" fill="{c["muted"]}">'
         f'<tspan fill="{c["cyan"]}">●</tspan> heard   <tspan fill="{c["violet"]}">●</tspan> passed it on</text>'
-        f'<text x="24" y="{H-18}" font-family="{SANS}" font-size="12" fill="{c["muted"]}">personas grounded in real answers · ideas spread through friends</text>'
+        f'<text x="24" y="282" font-family="{SANS}" font-size="12" fill="{c["muted"]}">personas grounded in real answers · ideas spread through friends</text>'
     )
     centers = [(120, 115), (275, 95), (440, 120), (190, 215), (385, 215)]
     nodes = []
@@ -693,7 +693,184 @@ def exploring(mode: str) -> str:
             f'<text x="{gx+120}" y="{vy+25}" font-family="{SANS}" font-size="12.5" fill="{c["text"]}">{sub}</text>'
             f"{anim_window(a, b, T)}</g>"
         )
+    s.append(memory_panel(c, 0, 320, T))
+    s.append(on_device_panel(c, 620, 320, T))
     s.append("</svg>")
+    return "".join(s)
+
+
+def memory_panel(c, x0, y0, T):
+    """An agent (a small robot) keeps what matters, lets the rest go, and recalls it later."""
+    s = [
+        f'<rect x="{x0+0.5}" y="{y0+0.5}" width="599" height="299" rx="16" fill="{c["panel"]}" stroke="{c["border"]}"/>',
+        f'<text x="{x0+24}" y="{y0+34}" font-family="{MONO}" font-size="13" fill="{c["muted"]}">agent.<tspan fill="{c["pink"]}">memory</tspan>.recall(now)</text>',
+        f'<text x="{x0+576}" y="{y0+34}" text-anchor="end" font-family="{SANS}" font-size="11.5" fill="{c["muted"]}">'
+        f'<tspan fill="{c["cyan"]}">●</tspan> kept   <tspan fill="{c["muted"]}">●</tspan> let go</text>',
+        f'<text x="{x0+24}" y="{y0+282}" font-family="{SANS}" font-size="12" fill="{c["muted"]}">for agents and robots · keep what matters · let the rest go · recall at the right moment</text>',
+    ]
+    # zones
+    zones = [("now", 150, 250), ("episodes", 280, 420), ("long-term", 450, 576)]
+    for lab, a, b in zones:
+        s.append(
+            f'<rect x="{x0+a}" y="{y0+62}" width="{b-a}" height="170" rx="12" fill="{c["bg"]}" stroke="{c["border"]}" stroke-dasharray="4 4"/>'
+            f'<text x="{x0+(a+b)/2}" y="{y0+252}" text-anchor="middle" font-family="{MONO}" font-size="11.5" fill="{c["muted"]}">{lab}</text>'
+        )
+    # robot
+    rx, ry = x0 + 72, y0 + 150
+    s.append(
+        f'<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -3;0 0" dur="3s" repeatCount="indefinite"/>'
+        f'<line x1="{rx}" y1="{ry-30}" x2="{rx}" y2="{ry-42}" stroke="{c["text"]}" stroke-width="2" stroke-linecap="round"/>'
+        f'<circle cx="{rx}" cy="{ry-45}" r="4" fill="{c["amber"]}"><animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/></circle>'
+        f'<rect x="{rx-24}" y="{ry-30}" width="48" height="40" rx="12" fill="{c["panel"]}" stroke="{c["text"]}" stroke-width="2"/>'
+        f'<rect x="{rx-16}" y="{ry-22}" width="32" height="18" rx="7" fill="{c["cyan"]}" fill-opacity="0.18"/>'
+        f'<circle cx="{rx-7}" cy="{ry-13}" r="2.6" fill="{c["text"]}"/><circle cx="{rx+7}" cy="{ry-13}" r="2.6" fill="{c["text"]}"/>'
+        f'<rect x="{rx-20}" y="{ry+12}" width="40" height="8" rx="4" fill="{c["faint"]}"/>'
+        f'<circle cx="{rx-13}" cy="{ry+22}" r="6" fill="{c["panel"]}" stroke="{c["text"]}" stroke-width="2"/>'
+        f'<circle cx="{rx+13}" cy="{ry+22}" r="6" fill="{c["panel"]}" stroke="{c["text"]}" stroke-width="2"/>'
+        f'<ellipse cx="{rx}" cy="{ry+31}" rx="30" ry="4" fill="{c["faint"]}" opacity="0.6"/></g>'
+    )
+    # episode stones (pebbles in a stream) and the long-term cairn
+    stones = [(305, 105), (365, 95), (330, 150), (392, 160), (350, 205)]
+    cols = [c["cyan"], c["pink"], c["amber"], c["violet"], c["green"]]
+    obs = []  # (t0, slot, kept_index or None, colour)
+    kept_iter = iter(range(5))
+    rnd = random.Random(7)
+    for k in range(8):
+        t0 = 0.4 + k * 0.85
+        slot = (200 + rnd.uniform(-28, 28), 95 + (k % 4) * 35 + rnd.uniform(-6, 6))
+        keep = k in (0, 2, 3, 5, 7)
+        obs.append((t0, slot, next(kept_iter) if keep else None, cols[k % 5]))
+    arrive = {}
+    for t0, (sx, sy), ki, col in obs:
+        t_slot, t_move = t0 + 0.5, t0 + 1.6
+        ax, ay = rx + 26, ry - 10
+        if ki is not None:
+            ex, ey = stones[ki]
+            col = cols[ki]
+            L1 = math.hypot(sx - (ax - x0), sy - (ay - y0)); L2 = math.hypot(ex - sx, ey - sy)
+            f = L1 / (L1 + L2)
+            path = f"M{ax} {ay} L{x0+sx:.1f} {y0+sy:.1f} L{x0+ex} {y0+ey}"
+            t_end = t_move + 0.7
+            arrive[ki] = t_end
+            kp, kt = f"0;0;{f:.3f};{f:.3f};1;1", [0, t0, t_slot, t_move, t_end, T]
+            op_v, op_t = "0;0;1;1;0;0", [0, t0, t0 + 0.1, t_end - 0.05, t_end, T]
+        else:
+            col = c["muted"]
+            path = f"M{ax} {ay} L{x0+sx:.1f} {y0+sy:.1f}"
+            kp, kt = "0;0;1;1", [0, t0, t_slot, T]
+            op_v, op_t = "0;0;1;1;0;0", [0, t0, t0 + 0.1, t_move, t_move + 0.9, T]
+        s.append(
+            f'<circle r="4" fill="{col}" opacity="0">'
+            f'<animateMotion path="{path}" dur="{T}s" repeatCount="indefinite" keyPoints="{kp}" keyTimes="{";".join(f"{v/T:.4f}" for v in kt)}" calcMode="linear"/>'
+            f'<animate attributeName="opacity" values="{op_v}" keyTimes="{";".join(f"{v/T:.4f}" for v in op_t)}" dur="{T}s" repeatCount="indefinite"/></circle>'
+        )
+    for i, (ex, ey) in enumerate(stones):
+        a = arrive[i] / T
+        s.append(
+            f'<ellipse cx="{x0+ex}" cy="{y0+ey}" rx="17" ry="8" fill="{c["faint"]}" fill-opacity="0.5" stroke="{c["border"]}">'
+            f'<animate attributeName="fill" values="{c["faint"]};{c["faint"]};{cols[i]};{cols[i]};{c["faint"]}" keyTimes="0;{a:.4f};{a+0.01:.4f};0.95;1" dur="{T}s" repeatCount="indefinite"/></ellipse>'
+        )
+    # cairn: long-term memory, balanced stones
+    cx, base = x0 + 513, y0 + 214
+    cairn = [(38, 11, c["muted"]), (30, 10, c["cyan"]), (24, 9, c["amber"]), (18, 8, c["pink"])]
+    y = base
+    tops = []
+    for w, h, col in cairn:
+        s.append(f'<ellipse cx="{cx}" cy="{y}" rx="{w}" ry="{h}" fill="{col}" fill-opacity="0.35" stroke="{col}" stroke-opacity="0.7"/>')
+        tops.append(y)
+        y -= 2 * h - 2
+    new_y = y
+    # consolidation: episodes flow into a new stone on top
+    for i in (0, 2, 4):
+        ex, ey = stones[i]
+        t0 = 8.0 + i * 0.12
+        s.append(
+            f'<circle r="3.2" fill="{cols[i]}" opacity="0">'
+            f'<animateMotion path="M{x0+ex} {y0+ey} Q{x0+440} {y0+60} {cx} {new_y}" dur="{T}s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;{t0/T:.4f};{(t0+0.8)/T:.4f};1" calcMode="linear"/>'
+            f'<animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;{t0/T:.4f};{(t0+0.4)/T:.4f};{(t0+0.8)/T:.4f};1" dur="{T}s" repeatCount="indefinite"/></circle>'
+        )
+    s.append(f'<g opacity="0"><ellipse cx="{cx}" cy="{new_y}" rx="12" ry="7" fill="{c["violet"]}" fill-opacity="0.45" stroke="{c["violet"]}"/>{anim_window(8.9, 11.5, T)}</g>')
+    # recall: the robot reaches back for the right memory
+    target_y = tops[1]
+    arc = f"M{rx+4} {ry-46} Q{x0+300} {y0+48} {cx-30} {target_y}"
+    s.append(
+        f'<path d="{arc}" fill="none" stroke="{c["amber"]}" stroke-width="2" stroke-dasharray="6 5" opacity="0">'
+        f'{anim_window(9.4, 11.3, T)[:-2]}/></path>'
+        f'<circle cx="{cx}" cy="{target_y}" r="14" fill="none" stroke="{c["amber"]}" stroke-width="2" opacity="0">'
+        f'<animate attributeName="r" values="14;14;34;34" keyTimes="0;{9.9/T:.4f};{11.0/T:.4f};1" dur="{T}s" repeatCount="indefinite"/>'
+        f'<animate attributeName="opacity" values="0;0;0.8;0;0" keyTimes="0;{9.9/T:.4f};{10.0/T:.4f};{11.0/T:.4f};1" dur="{T}s" repeatCount="indefinite"/></circle>'
+        f'<g opacity="0"><text x="{x0+300}" y="{y0+56}" text-anchor="middle" font-family="{MONO}" font-size="12" fill="{c["amber"]}">recall</text>{anim_window(9.6, 11.3, T)}</g>'
+    )
+    return "".join(s)
+
+
+def on_device_panel(c, x0, y0, T):
+    """A large model is quantized, pruned and distilled until it fits in a phone and runs offline."""
+    s = [
+        f'<rect x="{x0+0.5}" y="{y0+0.5}" width="379" height="299" rx="16" fill="{c["panel"]}" stroke="{c["border"]}"/>',
+        f'<text x="{x0+24}" y="{y0+34}" font-family="{MONO}" font-size="13" fill="{c["muted"]}">model.run(<tspan fill="{c["green"]}">on_device</tspan>=True)</text>',
+        f'<text x="{x0+24}" y="{y0+282}" font-family="{SANS}" font-size="12" fill="{c["muted"]}">quantize · prune · distill — then run where the user is</text>',
+    ]
+    # phone
+    px, py, pw, ph = x0 + 262, y0 + 58, 92, 196
+    s.append(
+        f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="18" fill="{c["bg"]}" stroke="{c["text"]}" stroke-width="2"/>'
+        f'<rect x="{px+pw/2-14}" y="{py+8}" width="28" height="6" rx="3" fill="{c["text"]}" opacity="0.8"/>'
+    )
+    # the model: three layers, drawn around (0, 0)
+    layers = [(-58, [-60, -20, 20, 60]), (0, [-75, -45, -15, 15, 45, 75]), (58, [-40, 0, 40])]
+    pruned_nodes = {(1, 1), (1, 4)}
+    rnd = random.Random(3)
+    lines, keep_lines = [], []
+    for li in range(2):
+        xa, ya = layers[li]; xb, yb = layers[li + 1]
+        for ia, a in enumerate(ya):
+            for ib, b in enumerate(yb):
+                pruned = (li, ia) in pruned_nodes or (li + 1, ib) in pruned_nodes or (li == 0 and (1, ib) in pruned_nodes) or rnd.random() < 0.35
+                (lines if pruned else keep_lines).append((xa, a, xb, b))
+    fade = f'<animate attributeName="opacity" values="0.55;0.55;0;0;0.55" keyTimes="0;{2.4/T:.4f};{3.4/T:.4f};0.97;1" dur="{T}s" repeatCount="indefinite"/>'
+    inner = [f'<g stroke="{c["faint"]}" stroke-width="1.2" opacity="0.55">{fade}' + "".join(
+        f'<line x1="{a}" y1="{b}" x2="{cc}" y2="{d}"/>' for a, b, cc, d in lines) + "</g>"]
+    inner.append(f'<g stroke="{c["muted"]}" stroke-width="1.4" opacity="0.6">' + "".join(
+        f'<line x1="{a}" y1="{b}" x2="{cc}" y2="{d}"/>' for a, b, cc, d in keep_lines) + "</g>")
+    lcols = [c["cyan"], c["violet"], c["green"]]
+    for li, (lx, ys) in enumerate(layers):
+        for ni, ny in enumerate(ys):
+            if (li, ni) in pruned_nodes:
+                inner.append(f'<circle cx="{lx}" cy="{ny}" r="6" fill="{c["faint"]}">{fade}</circle>')
+            else:
+                inner.append(f'<circle cx="{lx}" cy="{ny}" r="6.5" fill="{lcols[li]}"/>')
+    mx0, my0 = x0 + 118, y0 + 150
+    mx1, my1 = px + pw / 2, py + 80
+    k = f'0;{4.0/T:.4f};{5.6/T:.4f};1'
+    s.append(
+        f'<g><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.04;0.95;1" dur="{T}s" repeatCount="indefinite"/>'
+        f'<g><animateTransform attributeName="transform" type="translate" values="{mx0} {my0};{mx0} {my0};{mx1} {my1};{mx1} {my1}" keyTimes="{k}" dur="{T}s" repeatCount="indefinite"/>'
+        f'<g><animateTransform attributeName="transform" type="scale" values="1;1;0.4;0.4" keyTimes="{k}" dur="{T}s" repeatCount="indefinite"/>'
+        + "".join(inner) + "</g></g></g>"
+    )
+    # precision chip while compressing
+    s.append(
+        f'<g opacity="0"><rect x="{x0+70}" y="{y0+238}" width="96" height="24" rx="12" fill="{c["amber"]}" fill-opacity="0.14" stroke="{c["amber"]}" stroke-opacity="0.6"/>'
+        f'<text x="{x0+118}" y="{y0+254}" text-anchor="middle" font-family="{MONO}" font-size="11.5" fill="{c["text"]}">fp16 → int4</text>{anim_window(2.2, 5.4, T)}</g>'
+    )
+    # it runs on the phone: a voice waveform, offline
+    bars = []
+    for i in range(7):
+        bx = px + 18 + i * 9
+        h1, h2 = 6 + (i * 7) % 18, 4 + (i * 11) % 16
+        cy = py + 150
+        bars.append(
+            f'<rect x="{bx}" width="5" rx="2.5" fill="{c["pink"]}" y="{cy-3}" height="6">'
+            f'<animate attributeName="height" values="6;{h1};{h2};{h1/2+3};6" dur="{0.9+i*0.07:.2f}s" repeatCount="indefinite"/>'
+            f'<animate attributeName="y" values="{cy-3};{cy-h1/2};{cy-h2/2};{cy-h1/4-1.5};{cy-3}" dur="{0.9+i*0.07:.2f}s" repeatCount="indefinite"/></rect>'
+        )
+    s.append(f'<g opacity="0">{"".join(bars)}{anim_window(6.0, 11.2, T)}</g>')
+    s.append(
+        f'<g opacity="0"><circle cx="{px+24}" cy="{py+178}" r="3.5" fill="{c["green"]}"/>'
+        f'<text x="{px+32}" y="{py+182}" font-family="{MONO}" font-size="11" fill="{c["green"]}">offline</text>{anim_window(6.3, 11.2, T)}</g>'
+        f'<g opacity="0"><text x="{x0+118}" y="{y0+150}" text-anchor="middle" font-family="{SANS}" font-size="12.5" fill="{c["muted"]}">small · private · fast</text>{anim_window(6.3, 11.2, T)}</g>'
+    )
     return "".join(s)
 
 
