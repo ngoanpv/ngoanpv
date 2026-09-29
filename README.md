@@ -42,15 +42,6 @@ https://github.com/user-attachments/assets/a3605ff7-a7de-4f03-806f-cfdfa70e87f6
   <img alt="Find the pain, build with AI, ship it, learn and iterate" src="./assets/focus-light.svg" width="100%">
 </picture>
 
-## Along the way
-
-- **1st** on two national Vietnamese LLM benchmarks — VMLU and VLSP 2023
-- **9th globally** at Interspeech 2025 MLC-SLM — multilingual conversational ASR across 11 languages
-- **First in Southeast Asia** to pass iBeta / ISO 30107-3 with *passive* face liveness
-- A production voice agent brought from **~5 s to ~2 s** per turn, and LLM review of **100%** of customer calls
-- A company-wide **multi-agent knowledge assistant** on hybrid + graph retrieval, with an eval framework gating every release
-- Contributor to **Vibe-Trading** — a fix to its multi-turn tool-calling agent loop, and a first backtesting engine for the Vietnamese market
-
 ## Currently exploring
 
 <picture>
