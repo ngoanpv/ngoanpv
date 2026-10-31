@@ -92,10 +92,10 @@
   }
  ],
  "stats": {
-  "stars": 244,
+  "stars": 245,
   "followers": 85,
-  "repos": 74,
-  "contributions": 1786,
+  "repos": 75,
+  "contributions": 1909,
   "languages": [
    [
     "Python",
@@ -134,7 +134,7 @@
    "desc": "Open-source, voice-first AI mock interviewer. Upload your CV + a job description, practice out loud with an adaptive multilingual interviewer, get scored and coached on your weak areas. LiveKit · LangGraph · Next.js ",
    "lang": "Python",
    "color": "#3572A5",
-   "stars": 66,
+   "stars": 67,
    "forks": 21
   },
   "llama2_vietnamese": {
