@@ -103,9 +103,9 @@
  ],
  "stats": {
   "stars": 250,
-  "followers": 87,
+  "followers": 88,
   "repos": 76,
-  "contributions": 2461,
+  "contributions": 2508,
   "languages": [
    [
     "Python",
@@ -145,7 +145,7 @@
    "lang": "Python",
    "color": "#3572A5",
    "stars": 72,
-   "forks": 23
+   "forks": 22
   },
   "llama2_vietnamese": {
    "desc": "A fine-tuned Large Language Model (LLM) for the Vietnamese language based on the Llama 2 model.",
